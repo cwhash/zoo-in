@@ -1,11 +1,56 @@
-const tasks = Array.from({ length: 25 }, (_, index) => {
-  const number = index + 1;
+const GRID_SIZE = 5;
+const CENTER_INDEX = Math.floor(GRID_SIZE / 2);
+const LEVEL_ORDER = ["S", "A", "B", "C"];
+const START_NUMBER_BY_LEVEL = {
+  S: 1,
+  A: 2,
+  B: 10,
+  C: 18
+};
+
+function getTaskLevel(row, col) {
+  const isCenter = row === CENTER_INDEX && col === CENTER_INDEX;
+  if (isCenter) {
+    return "S";
+  }
+
+  const isDiagonal = row === col || row + col === GRID_SIZE - 1;
+  if (isDiagonal) {
+    return "A";
+  }
+
+  const isMiddleCross = row === CENTER_INDEX || col === CENTER_INDEX;
+  return isMiddleCross ? "B" : "C";
+}
+
+const positions = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => {
+  const row = Math.floor(index / GRID_SIZE);
+  const col = index % GRID_SIZE;
+
   return {
-    id: number,
-    title: `Task ${number}`,
-    description: `Detailed mission notes for task ${number}. Customize this with your own challenge and completion criteria.`
+    row,
+    col,
+    level: getTaskLevel(row, col)
   };
 });
+
+const tasks = [];
+LEVEL_ORDER.forEach((level) => {
+  const levelPositions = positions.filter((position) => position.level === level);
+  levelPositions.forEach((position, index) => {
+    const id = START_NUMBER_BY_LEVEL[level] + index;
+    tasks.push({
+      id,
+      row: position.row,
+      col: position.col,
+      level,
+      title: `任務 ${id}`,
+      description: `連線難度等級：${level}`
+    });
+  });
+});
+
+tasks.sort((a, b) => a.row - b.row || a.col - b.col);
 
 const gridElement = document.getElementById("taskGrid");
 const detailsElement = document.getElementById("taskDetails");
@@ -19,9 +64,9 @@ function renderGrid() {
   tasks.forEach((task) => {
     const cell = document.createElement("button");
     cell.type = "button";
-    cell.className = "task-cell";
-    cell.textContent = task.id;
-    cell.setAttribute("aria-label", `${task.title}`);
+    cell.className = `task-cell level-${task.level}`;
+    cell.textContent = `${task.id}`;
+    cell.setAttribute("aria-label", `${task.title}，難度 ${task.level}`);
     cell.addEventListener("click", openSidebar);
     fragment.appendChild(cell);
   });
@@ -32,10 +77,11 @@ function renderDetails() {
   const fragment = document.createDocumentFragment();
   tasks.forEach((task) => {
     const item = document.createElement("li");
+    item.className = `level-${task.level}`;
 
     const title = document.createElement("div");
     title.className = "task-id";
-    title.textContent = `${task.id}. ${task.title}`;
+    title.textContent = `${task.id}. ${task.title} (${task.level})`;
 
     const description = document.createElement("p");
     description.textContent = task.description;
