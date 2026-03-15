@@ -5,6 +5,13 @@ const levelPlan = [
   { level: "C", count: 8 }
 ];
 
+const levelLabel = {
+  S: "金色",
+  A: "淡藍色",
+  B: "淡綠色",
+  C: "灰色"
+};
+
 const taskLevels = levelPlan.flatMap(({ level, count }) => Array.from({ length: count }, () => level));
 
 const tasks = Array.from({ length: 25 }, (_, index) => {
@@ -15,7 +22,7 @@ const tasks = Array.from({ length: 25 }, (_, index) => {
     id: number,
     level,
     title: `任務 ${number}`,
-    description: `連線難度等級：${level}`
+    description: `連線難度：${level}（${levelLabel[level]}）`
   };
 });
 
@@ -28,11 +35,12 @@ const overlay = document.getElementById("overlay");
 
 function renderGrid() {
   const fragment = document.createDocumentFragment();
-  tasks.forEach((task) => {
+  tasks.forEach((task, index) => {
     const cell = document.createElement("button");
     cell.type = "button";
     cell.className = `task-cell level-${task.level}`;
     cell.textContent = `${task.id}`;
+    cell.style.setProperty("--i", index + 1);
     cell.setAttribute("aria-label", `${task.title}，難度 ${task.level}`);
     cell.addEventListener("click", openSidebar);
     fragment.appendChild(cell);
