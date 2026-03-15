@@ -5,6 +5,10 @@
   --text: #1c2331;
   --primary: #3659ff;
   --primary-soft: #e8edff;
+  --level-s: #f7d774;
+  --level-a: #d9ebff;
+  --level-b: #dff6d9;
+  --level-c: #e4e6eb;
   --border: #dce3f2;
   --shadow: 0 12px 24px rgba(32, 49, 89, 0.12);
 }
@@ -81,10 +85,28 @@ body {
   font-size: 1rem;
   font-weight: 600;
   background: linear-gradient(145deg, #fff, #f5f8ff);
+  color: #1f2a42;
 }
 
 .task-cell:active {
   transform: scale(0.97);
+}
+
+
+.task-cell.level-S {
+  background: var(--level-s);
+}
+
+.task-cell.level-A {
+  background: var(--level-a);
+}
+
+.task-cell.level-B {
+  background: var(--level-b);
+}
+
+.task-cell.level-C {
+  background: var(--level-c);
 }
 
 .sidebar {
@@ -141,7 +163,22 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0.7rem;
-  background: var(--primary-soft);
+}
+
+.task-details li.level-S {
+  background: color-mix(in srgb, var(--level-s) 48%, white);
+}
+
+.task-details li.level-A {
+  background: color-mix(in srgb, var(--level-a) 56%, white);
+}
+
+.task-details li.level-B {
+  background: color-mix(in srgb, var(--level-b) 56%, white);
+}
+
+.task-details li.level-C {
+  background: color-mix(in srgb, var(--level-c) 56%, white);
 }
 
 .task-id {

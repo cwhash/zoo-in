@@ -1,9 +1,21 @@
+const levelPlan = [
+  { level: "S", count: 1 },
+  { level: "A", count: 8 },
+  { level: "B", count: 8 },
+  { level: "C", count: 8 }
+];
+
+const taskLevels = levelPlan.flatMap(({ level, count }) => Array.from({ length: count }, () => level));
+
 const tasks = Array.from({ length: 25 }, (_, index) => {
   const number = index + 1;
+  const level = taskLevels[index];
+
   return {
     id: number,
-    title: `Task ${number}`,
-    description: `Detailed mission notes for task ${number}. Customize this with your own challenge and completion criteria.`
+    level,
+    title: `任務 ${number}`,
+    description: `連線難度等級：${level}`
   };
 });
 
@@ -19,9 +31,9 @@ function renderGrid() {
   tasks.forEach((task) => {
     const cell = document.createElement("button");
     cell.type = "button";
-    cell.className = "task-cell";
-    cell.textContent = task.id;
-    cell.setAttribute("aria-label", `${task.title}`);
+    cell.className = `task-cell level-${task.level}`;
+    cell.textContent = `${task.id}`;
+    cell.setAttribute("aria-label", `${task.title}，難度 ${task.level}`);
     cell.addEventListener("click", openSidebar);
     fragment.appendChild(cell);
   });
@@ -32,10 +44,11 @@ function renderDetails() {
   const fragment = document.createDocumentFragment();
   tasks.forEach((task) => {
     const item = document.createElement("li");
+    item.className = `level-${task.level}`;
 
     const title = document.createElement("div");
     title.className = "task-id";
-    title.textContent = `${task.id}. ${task.title}`;
+    title.textContent = `${task.id}. ${task.title} (${task.level})`;
 
     const description = document.createElement("p");
     description.textContent = task.description;
