@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Life Grid</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <button id="menuButton" class="menu-button" aria-label="Open task details" aria-controls="sidebar" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <h1>Life Grid</h1>
+      </header>
+
+      <main>
+        <section class="grid-section" aria-label="Task Grid">
+          <div id="taskGrid" class="task-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <aside id="sidebar" class="sidebar" aria-hidden="true">
+      <div class="sidebar-header">
+        <h2>Task Details</h2>
+        <button id="closeButton" class="close-button" aria-label="Close task details">×</button>
+      </div>
+      <ul id="taskDetails" class="task-details"></ul>
+    </aside>
+
+    <div id="overlay" class="overlay hidden" aria-hidden="true"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

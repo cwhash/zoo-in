@@ -8,83 +8,83 @@
 
 ---
 
-<!-- English Version -->
 <a name="english-version"></a>
 
 <div align="center">
 
 # 🗺️ Life Grid
 
-**A 5×5 Life Goal Tracker — 25 goals, one grid, your journey.**
+**A mobile-first 5×5 mission board with 25 numbered tasks.**
 
 </div>
 
 ## ✨ Overview
 
-Life Grid is a web app that helps you define and track **25 life goals** laid out in a visual 5×5 grid. Each cell represents a goal you want to achieve — from career milestones to personal growth.
+Life Grid is a lightweight web experience designed for mobile users. The home screen shows a **5×5 grid** with tasks numbered **1 to 25**. Tap the hamburger icon at the top-left to open a sidebar and read each task's detailed description.
 
 ## 🚀 Features
 
-- 📋 **25-cell grid** — organize your life goals at a glance
-- ✅ **Track progress** — mark goals as in-progress or completed
-- 🌐 **Bilingual** — supports Traditional Chinese & English
-- 💡 **Clean UI** — minimal, distraction-free design
+- 📱 **Mobile-first layout** optimized for phone screens
+- 🔢 **5×5 mission grid** with tasks 1–25
+- ☰ **Hamburger menu** in the top-left corner
+- 📋 **Sidebar task details** for all missions
+- 🌐 **Bilingual README** (English + Traditional Chinese)
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Backend | Python |
-| Frontend | HTML / CSS / JS |
+| Frontend | HTML / CSS / JavaScript |
 
 ## 📦 Getting Started
 
 ```bash
 git clone https://github.com/cwhash/life-grid.git
 cd life-grid
-pip install -r requirements.txt
-python app.py
+python -m http.server 8000
 ```
+
+Open `http://localhost:8000` in your browser.
 
 ---
 
-<!-- Chinese Version -->
 <a name="chinese-version"></a>
 
 <div align="center">
 
-# 🗺️ Life Grid｜人生目標格
+# 🗺️ Life Grid｜人生任務格
 
-**5×5 人生目標清單 — 25 個格子，寫下你的人生藍圖。**
+**以手機為主的 5×5 任務面板，共 25 個編號任務。**
 
 </div>
 
 ## ✨ 專案簡介
 
-Life Grid 是一個網頁應用程式，協助你以視覺化的 5×5 宮格來規劃並追蹤 **25 個人生目標**，每一格代表一個你想達成的目標。
+Life Grid 是一個輕量化的手機優先網頁。主畫面提供 **5×5 宮格**，任務編號為 **1～25**。點擊左上角的三條線（漢堡）圖示可開啟側邊欄，查看每個任務的詳細說明。
 
 ## 🚀 功能特色
 
-- 📋 **25 宮格** — 一覽所有人生目標
-- ✅ **進度追蹤** — 標記目標為進行中或已完成
-- 🌐 **雙語支援** — 繁體中文 & 英文介面
-- 💡 **簡潔 UI** — 清爽、專注的設計風格
+- 📱 **手機優先版面**，針對小螢幕優化
+- 🔢 **5×5 任務宮格**，共 1～25 號任務
+- ☰ **左上角漢堡選單**，快速開啟任務資訊
+- 📋 **側邊欄詳細說明**，完整列出所有任務
+- 🌐 **README 雙語內容**（英文 + 繁體中文）
 
 ## 🛠️ 技術架構
 
 | 層級 | 技術 |
 |------|------|
-| 後端 | Python |
-| 前端 | HTML / CSS / JS |
+| 前端 | HTML / CSS / JavaScript |
 
 ## 📦 啟動方式
 
 ```bash
 git clone https://github.com/cwhash/life-grid.git
 cd life-grid
-pip install -r requirements.txt
-python app.py
+python -m http.server 8000
 ```
+
+瀏覽器開啟 `http://localhost:8000` 即可使用。
 
 ---
 

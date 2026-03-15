@@ -1,0 +1,161 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f8fc;
+  --panel: #ffffff;
+  --text: #1c2331;
+  --primary: #3659ff;
+  --primary-soft: #e8edff;
+  --border: #dce3f2;
+  --shadow: 0 12px 24px rgba(32, 49, 89, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", "Noto Sans TC", Arial, sans-serif;
+}
+
+.app {
+  max-width: 500px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.menu-button {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding-inline: 10px;
+}
+
+.menu-button span {
+  display: block;
+  height: 2.5px;
+  border-radius: 999px;
+  background: var(--text);
+}
+
+.grid-section {
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 0.8rem;
+  box-shadow: var(--shadow);
+}
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.task-cell {
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(145deg, #fff, #f5f8ff);
+}
+
+.task-cell:active {
+  transform: scale(0.97);
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: min(86vw, 360px);
+  height: 100dvh;
+  background: var(--panel);
+  box-shadow: 12px 0 30px rgba(16, 28, 59, 0.24);
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  z-index: 12;
+  padding: 1rem;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.close-button {
+  border: none;
+  background: transparent;
+  font-size: 1.7rem;
+  line-height: 1;
+  color: #495269;
+}
+
+.task-details {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+  max-height: calc(100dvh - 90px);
+  overflow: auto;
+}
+
+.task-details li {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.7rem;
+  background: var(--primary-soft);
+}
+
+.task-id {
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 28, 45, 0.4);
+  z-index: 8;
+}
+
+.hidden {
+  display: none;
+}
