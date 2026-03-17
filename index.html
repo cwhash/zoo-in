@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +7,29 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app">
+    <section id="authScreen" class="auth-screen">
+      <div class="auth-card">
+        <h1>Life Grid 登入</h1>
+        <p class="auth-subtitle">請使用帳號密碼或 Google 登入</p>
+
+        <form id="loginForm" class="login-form">
+          <label for="username">帳號</label>
+          <input id="username" name="username" type="text" autocomplete="username" required />
+
+          <label for="password">密碼</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+          <button type="submit" class="primary-btn">帳號密碼登入</button>
+        </form>
+
+        <div class="auth-divider">或</div>
+        <button id="googleLoginButton" class="google-btn" type="button">使用 Google 登入</button>
+
+        <p id="authMessage" class="auth-message" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <div id="app" class="app hidden">
       <header class="topbar">
         <button id="menuButton" class="menu-button" aria-label="Open task details" aria-controls="sidebar" aria-expanded="false">
           <span></span>
@@ -16,6 +38,7 @@
         </button>
         <div>
           <h1>Life Grid</h1>
+          <p id="userBadge" class="user-badge"></p>
         </div>
       </header>
 
@@ -37,6 +60,15 @@
         <h2>Task Details</h2>
         <button id="closeButton" class="close-button" aria-label="Close task details">×</button>
       </div>
+
+      <section id="adminPanel" class="admin-panel hidden">
+        <h3>後台（示範）</h3>
+        <p>目前登入者：<strong id="adminName"></strong></p>
+        <p>排序：<strong>No.1 用戶</strong></p>
+        <p class="hash-line">帳號 hash：<code id="accountHash"></code></p>
+        <p class="hash-line">密碼 hash：<code id="passwordHash"></code></p>
+      </section>
+
       <ul id="taskDetails" class="task-details"></ul>
     </aside>
 
