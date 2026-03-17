@@ -26,7 +26,6 @@ const users = [
 const authScreen = document.getElementById("authScreen");
 const app = document.getElementById("app");
 const loginForm = document.getElementById("loginForm");
-const googleLoginButton = document.getElementById("googleLoginButton");
 const authMessage = document.getElementById("authMessage");
 const userBadge = document.getElementById("userBadge");
 const adminPanel = document.getElementById("adminPanel");
@@ -154,6 +153,9 @@ function setLoggedInUser(user, loginType) {
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
+  const submitButton = loginForm.querySelector("button[type='submit']");
+  submitButton.disabled = true;
+
   const formData = new FormData(loginForm);
   const username = (formData.get("username") || "").toString().trim();
   const password = (formData.get("password") || "").toString();
@@ -162,22 +164,14 @@ loginForm.addEventListener("submit", async (event) => {
   const passwordHash = await sha256(password);
   const matchedUser = users.find((user) => user.accountHash === accountHash && user.passwordHash === passwordHash);
 
+  submitButton.disabled = false;
+
   if (!matchedUser) {
     authMessage.textContent = "登入失敗：帳號或密碼錯誤";
     return;
   }
 
   setLoggedInUser(matchedUser, "帳密登入");
-});
-
-googleLoginButton.addEventListener("click", () => {
-  const topUser = users.find((user) => user.rank === 1);
-  if (!topUser) {
-    authMessage.textContent = "目前沒有可用的 Google 登入用戶";
-    return;
-  }
-
-  setLoggedInUser(topUser, "Google 登入（示範）");
 });
 
 menuButton.addEventListener("click", openSidebar);
