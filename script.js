@@ -7,6 +7,12 @@ const START_NUMBER_BY_LEVEL = {
   B: 10,
   C: 18
 };
+const levelLabel = {
+  S: "金色",
+  A: "淡藍色",
+  B: "淡綠色",
+  C: "灰色"
+};
 
 function getTaskLevel(row, col) {
   const isCenter = row === CENTER_INDEX && col === CENTER_INDEX;
@@ -45,11 +51,10 @@ LEVEL_ORDER.forEach((level) => {
       col: position.col,
       level,
       title: `任務 ${id}`,
-      description: `連線難度等級：${level}`
+      description: `連線難度等級：${level}（${levelLabel[level]}）`
     });
   });
 });
-
 tasks.sort((a, b) => a.row - b.row || a.col - b.col);
 
 const gridElement = document.getElementById("taskGrid");
@@ -61,11 +66,12 @@ const overlay = document.getElementById("overlay");
 
 function renderGrid() {
   const fragment = document.createDocumentFragment();
-  tasks.forEach((task) => {
+  tasks.forEach((task, index) => {
     const cell = document.createElement("button");
     cell.type = "button";
     cell.className = `task-cell level-${task.level}`;
     cell.textContent = `${task.id}`;
+    cell.style.setProperty("--i", index + 1);
     cell.setAttribute("aria-label", `${task.title}，難度 ${task.level}`);
     cell.addEventListener("click", openSidebar);
     fragment.appendChild(cell);
@@ -78,15 +84,12 @@ function renderDetails() {
   tasks.forEach((task) => {
     const item = document.createElement("li");
     item.className = `level-${task.level}`;
-
     const title = document.createElement("div");
     title.className = "task-id";
     title.textContent = `${task.id}. ${task.title} (${task.level})`;
-
     const description = document.createElement("p");
     description.textContent = task.description;
     description.style.margin = "0";
-
     item.append(title, description);
     fragment.appendChild(item);
   });
@@ -110,12 +113,10 @@ function closeSidebar() {
 menuButton.addEventListener("click", openSidebar);
 closeButton.addEventListener("click", closeSidebar);
 overlay.addEventListener("click", closeSidebar);
-
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeSidebar();
   }
 });
-
 renderGrid();
 renderDetails();
