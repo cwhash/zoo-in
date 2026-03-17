@@ -10,20 +10,17 @@
     <section id="authScreen" class="auth-screen">
       <div class="auth-card">
         <h1>Life Grid 登入</h1>
-        <p class="auth-subtitle">請使用帳號密碼或 Google 登入</p>
+        <p class="auth-subtitle">使用帳號與密碼登入，開始你的任務挑戰。</p>
 
         <form id="loginForm" class="login-form">
           <label for="username">帳號</label>
-          <input id="username" name="username" type="text" autocomplete="username" required />
+          <input id="username" name="username" type="text" autocomplete="username" inputmode="text" placeholder="請輸入帳號" required />
 
           <label for="password">密碼</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" required />
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="請輸入密碼" required />
 
-          <button type="submit" class="primary-btn">帳號密碼登入</button>
+          <button type="submit" class="primary-btn">登入</button>
         </form>
-
-        <div class="auth-divider">或</div>
-        <button id="googleLoginButton" class="google-btn" type="button">使用 Google 登入</button>
 
         <p id="authMessage" class="auth-message" role="status" aria-live="polite"></p>
       </div>
