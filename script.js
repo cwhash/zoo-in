@@ -81,7 +81,8 @@ function renderGrid() {
 
 function renderDetails() {
   const fragment = document.createDocumentFragment();
-  tasks.forEach((task) => {
+  const tasksByIdAsc = [...tasks].sort((a, b) => a.id - b.id);
+  tasksByIdAsc.forEach((task) => {
     const item = document.createElement("li");
     item.className = `level-${task.level}`;
     const title = document.createElement("div");
