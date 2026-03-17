@@ -299,19 +299,30 @@ body {
     max-width: 860px;
     width: min(94vw, 860px);
     min-height: auto;
+    max-height: 96dvh;
     background: rgba(255, 255, 255, 0.56);
     border-radius: 24px;
     border: 1px solid rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(6px);
     box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  main {
+    display: flex;
+    justify-content: center;
   }
 
   .grid-section {
     padding: 1rem;
+    width: min(100%, 720px);
+    display: grid;
+    justify-items: center;
   }
 
   .task-grid {
     gap: 0.72rem;
+    width: min(100%, calc(100dvh - 250px));
   }
 
   .task-cell {
