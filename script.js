@@ -20,6 +20,12 @@ const users = [
     displayName: "No.1 用戶",
     accountHash: "e058108d007bba71d20a52053fa5efe9144ac6d2f48757368ff653ea5da68e47",
     passwordHash: "53e0bf8c098f31212bf5298bc6a47d026684332081b196156c9c5c79218d28c8"
+  },
+  {
+    rank: 2,
+    displayName: "開發人員",
+    accountHash: "d04b98f48e8f8bcc15c6ae5ac050801cd6dcfd428fb5f9e65c4e16e7807340fa",
+    passwordHash: "d04b98f48e8f8bcc15c6ae5ac050801cd6dcfd428fb5f9e65c4e16e7807340fa"
   }
 ];
 

@@ -13,11 +13,15 @@
         <p class="auth-subtitle">使用帳號與密碼登入，開始你的任務挑戰。</p>
 
         <form id="loginForm" class="login-form">
-          <label for="username">帳號</label>
-          <input id="username" name="username" type="text" autocomplete="username" inputmode="text" placeholder="請輸入帳號" required />
+          <div class="form-item">
+            <label for="username">帳號</label>
+            <input id="username" name="username" type="text" autocomplete="username" inputmode="text" placeholder="請輸入帳號" required />
+          </div>
 
-          <label for="password">密碼</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="請輸入密碼" required />
+          <div class="form-item">
+            <label for="password">密碼</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="請輸入密碼" required />
+          </div>
 
           <button type="submit" class="primary-btn">登入</button>
         </form>
