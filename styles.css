@@ -30,11 +30,90 @@ body {
   font-family: "Inter", "Noto Sans TC", Arial, sans-serif;
 }
 
+.auth-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.auth-card {
+  width: min(92vw, 420px);
+  border-radius: 20px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.2rem;
+}
+
+.auth-card h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.auth-subtitle {
+  margin: 0.3rem 0 1rem;
+  color: var(--muted);
+}
+
+.login-form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.login-form input,
+.primary-btn,
+.google-btn {
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 0 0.8rem;
+  font: inherit;
+}
+
+.primary-btn,
+.google-btn {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-btn {
+  margin-top: 0.25rem;
+  background: var(--primary);
+  color: #fff;
+  border-color: transparent;
+}
+
+.google-btn {
+  width: 100%;
+  background: #fff;
+}
+
+.auth-divider {
+  margin: 0.85rem 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.auth-message {
+  min-height: 1.4em;
+  margin: 0.8rem 0 0;
+  color: #bf2c2c;
+  font-size: 0.9rem;
+}
+
 .app {
   max-width: 600px;
   min-height: 100dvh;
   margin: 0 auto;
   padding: 1rem 1rem 2rem;
+}
+
+.user-badge {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .topbar {
@@ -240,6 +319,29 @@ body {
   color: #495269;
 }
 
+.admin-panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.7rem;
+  margin-bottom: 0.8rem;
+  background: #f6f8ff;
+  font-size: 0.86rem;
+}
+
+.admin-panel h3 {
+  margin: 0 0 0.5rem;
+}
+
+.admin-panel p {
+  margin: 0.2rem 0;
+}
+
+.hash-line code {
+  display: inline-block;
+  max-width: 100%;
+  overflow: auto;
+}
+
 .task-details {
   list-style: none;
   padding: 0;
@@ -293,6 +395,10 @@ body {
     display: grid;
     place-items: center;
     padding: 1.5rem;
+  }
+
+  .auth-screen {
+    min-height: auto;
   }
 
   .app {

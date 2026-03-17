@@ -14,6 +14,33 @@ const levelLabel = {
   C: "灰色"
 };
 
+const users = [
+  {
+    rank: 1,
+    displayName: "No.1 用戶",
+    accountHash: "e058108d007bba71d20a52053fa5efe9144ac6d2f48757368ff653ea5da68e47",
+    passwordHash: "53e0bf8c098f31212bf5298bc6a47d026684332081b196156c9c5c79218d28c8"
+  }
+];
+
+const authScreen = document.getElementById("authScreen");
+const app = document.getElementById("app");
+const loginForm = document.getElementById("loginForm");
+const googleLoginButton = document.getElementById("googleLoginButton");
+const authMessage = document.getElementById("authMessage");
+const userBadge = document.getElementById("userBadge");
+const adminPanel = document.getElementById("adminPanel");
+const adminName = document.getElementById("adminName");
+const accountHashElement = document.getElementById("accountHash");
+const passwordHashElement = document.getElementById("passwordHash");
+
+const gridElement = document.getElementById("taskGrid");
+const detailsElement = document.getElementById("taskDetails");
+const sidebar = document.getElementById("sidebar");
+const menuButton = document.getElementById("menuButton");
+const closeButton = document.getElementById("closeButton");
+const overlay = document.getElementById("overlay");
+
 function getTaskLevel(row, col) {
   const isCenter = row === CENTER_INDEX && col === CENTER_INDEX;
   if (isCenter) {
@@ -56,13 +83,6 @@ LEVEL_ORDER.forEach((level) => {
   });
 });
 tasks.sort((a, b) => a.row - b.row || a.col - b.col);
-
-const gridElement = document.getElementById("taskGrid");
-const detailsElement = document.getElementById("taskDetails");
-const sidebar = document.getElementById("sidebar");
-const menuButton = document.getElementById("menuButton");
-const closeButton = document.getElementById("closeButton");
-const overlay = document.getElementById("overlay");
 
 function renderGrid() {
   const fragment = document.createDocumentFragment();
@@ -111,6 +131,55 @@ function closeSidebar() {
   overlay.classList.add("hidden");
 }
 
+async function sha256(text) {
+  const encoded = new TextEncoder().encode(text);
+  const buffer = await crypto.subtle.digest("SHA-256", encoded);
+  const hashArray = Array.from(new Uint8Array(buffer));
+  return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function setLoggedInUser(user, loginType) {
+  authScreen.classList.add("hidden");
+  app.classList.remove("hidden");
+  userBadge.textContent = `${user.displayName}（${loginType}）`;
+
+  adminPanel.classList.remove("hidden");
+  adminName.textContent = user.displayName;
+  accountHashElement.textContent = user.accountHash;
+  passwordHashElement.textContent = user.passwordHash;
+
+  authMessage.textContent = "";
+}
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const formData = new FormData(loginForm);
+  const username = (formData.get("username") || "").toString().trim();
+  const password = (formData.get("password") || "").toString();
+
+  const accountHash = await sha256(username);
+  const passwordHash = await sha256(password);
+  const matchedUser = users.find((user) => user.accountHash === accountHash && user.passwordHash === passwordHash);
+
+  if (!matchedUser) {
+    authMessage.textContent = "登入失敗：帳號或密碼錯誤";
+    return;
+  }
+
+  setLoggedInUser(matchedUser, "帳密登入");
+});
+
+googleLoginButton.addEventListener("click", () => {
+  const topUser = users.find((user) => user.rank === 1);
+  if (!topUser) {
+    authMessage.textContent = "目前沒有可用的 Google 登入用戶";
+    return;
+  }
+
+  setLoggedInUser(topUser, "Google 登入（示範）");
+});
+
 menuButton.addEventListener("click", openSidebar);
 closeButton.addEventListener("click", closeSidebar);
 overlay.addEventListener("click", closeSidebar);
@@ -119,5 +188,6 @@ document.addEventListener("keydown", (event) => {
     closeSidebar();
   }
 });
+
 renderGrid();
 renderDetails();
