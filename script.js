@@ -1,10 +1,12 @@
-const levelPlan = [
-  { level: "S", count: 1 },
-  { level: "A", count: 8 },
-  { level: "B", count: 8 },
-  { level: "C", count: 8 }
-];
-
+const GRID_SIZE = 5;
+const CENTER_INDEX = Math.floor(GRID_SIZE / 2);
+const LEVEL_ORDER = ["S", "A", "B", "C"];
+const START_NUMBER_BY_LEVEL = {
+  S: 1,
+  A: 2,
+  B: 10,
+  C: 18
+};
 const levelLabel = {
   S: "金色",
   A: "淡藍色",
@@ -12,19 +14,48 @@ const levelLabel = {
   C: "灰色"
 };
 
-const taskLevels = levelPlan.flatMap(({ level, count }) => Array.from({ length: count }, () => level));
+function getTaskLevel(row, col) {
+  const isCenter = row === CENTER_INDEX && col === CENTER_INDEX;
+  if (isCenter) {
+    return "S";
+  }
 
-const tasks = Array.from({ length: 25 }, (_, index) => {
-  const number = index + 1;
-  const level = taskLevels[index];
+  const isDiagonal = row === col || row + col === GRID_SIZE - 1;
+  if (isDiagonal) {
+    return "A";
+  }
+
+  const isMiddleCross = row === CENTER_INDEX || col === CENTER_INDEX;
+  return isMiddleCross ? "B" : "C";
+}
+
+const positions = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => {
+  const row = Math.floor(index / GRID_SIZE);
+  const col = index % GRID_SIZE;
 
   return {
-    id: number,
-    level,
-    title: `任務 ${number}`,
-    description: `連線難度：${level}（${levelLabel[level]}）`
+    row,
+    col,
+    level: getTaskLevel(row, col)
   };
 });
+
+const tasks = [];
+LEVEL_ORDER.forEach((level) => {
+  const levelPositions = positions.filter((position) => position.level === level);
+  levelPositions.forEach((position, index) => {
+    const id = START_NUMBER_BY_LEVEL[level] + index;
+    tasks.push({
+      id,
+      row: position.row,
+      col: position.col,
+      level,
+      title: `任務 ${id}`,
+      description: `連線難度等級：${level}（${levelLabel[level]}）`
+    });
+  });
+});
+tasks.sort((a, b) => a.row - b.row || a.col - b.col);
 
 const gridElement = document.getElementById("taskGrid");
 const detailsElement = document.getElementById("taskDetails");
@@ -53,15 +84,12 @@ function renderDetails() {
   tasks.forEach((task) => {
     const item = document.createElement("li");
     item.className = `level-${task.level}`;
-
     const title = document.createElement("div");
     title.className = "task-id";
     title.textContent = `${task.id}. ${task.title} (${task.level})`;
-
     const description = document.createElement("p");
     description.textContent = task.description;
     description.style.margin = "0";
-
     item.append(title, description);
     fragment.appendChild(item);
   });
@@ -85,12 +113,10 @@ function closeSidebar() {
 menuButton.addEventListener("click", openSidebar);
 closeButton.addEventListener("click", closeSidebar);
 overlay.addEventListener("click", closeSidebar);
-
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeSidebar();
   }
 });
-
 renderGrid();
 renderDetails();
