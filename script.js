@@ -21,12 +21,6 @@ const users = [
     accountHash: "e058108d007bba71d20a52053fa5efe9144ac6d2f48757368ff653ea5da68e47",
     passwordHash: "53e0bf8c098f31212bf5298bc6a47d026684332081b196156c9c5c79218d28c8"
   },
-  {
-    rank: 2,
-    displayName: "開發人員",
-    accountHash: "d04b98f48e8f8bcc15c6ae5ac050801cd6dcfd428fb5f9e65c4e16e7807340fa",
-    passwordHash: "d04b98f48e8f8bcc15c6ae5ac050801cd6dcfd428fb5f9e65c4e16e7807340fa"
-  }
 ];
 
 const authScreen = document.getElementById("authScreen");
@@ -34,10 +28,6 @@ const app = document.getElementById("app");
 const loginForm = document.getElementById("loginForm");
 const authMessage = document.getElementById("authMessage");
 const userBadge = document.getElementById("userBadge");
-const adminPanel = document.getElementById("adminPanel");
-const adminName = document.getElementById("adminName");
-const accountHashElement = document.getElementById("accountHash");
-const passwordHashElement = document.getElementById("passwordHash");
 
 const gridElement = document.getElementById("taskGrid");
 const detailsElement = document.getElementById("taskDetails");
@@ -143,15 +133,11 @@ async function sha256(text) {
   return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function setLoggedInUser(user, loginType) {
+function setLoggedInUser(user) {
   authScreen.classList.add("hidden");
   app.classList.remove("hidden");
-  userBadge.textContent = `${user.displayName}（${loginType}）`;
+  userBadge.textContent = user.displayName;
 
-  adminPanel.classList.remove("hidden");
-  adminName.textContent = user.displayName;
-  accountHashElement.textContent = user.accountHash;
-  passwordHashElement.textContent = user.passwordHash;
 
   authMessage.textContent = "";
 }
@@ -177,7 +163,7 @@ loginForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  setLoggedInUser(matchedUser, "帳密登入");
+  setLoggedInUser(matchedUser);
 });
 
 menuButton.addEventListener("click", openSidebar);
