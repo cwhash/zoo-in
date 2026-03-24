@@ -5,22 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Life Grid</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
     <section id="authScreen" class="auth-screen">
       <div class="auth-card">
         <h1>Life Grid 登入</h1>
-        <p class="auth-subtitle">使用帳號與密碼登入，開始你的任務挑戰。</p>
+        <p class="auth-subtitle">使用 Email 與密碼登入，開始你的任務挑戰。</p>
 
         <form id="loginForm" class="login-form">
           <div class="form-item">
-            <label for="username">帳號</label>
-            <input id="username" name="username" type="text" autocomplete="username" inputmode="text" placeholder="請輸入帳號" required />
+            <label for="username">Email</label>
+            <input id="username" name="username" type="email" autocomplete="email"
+              placeholder="請輸入 Email" required />
           </div>
 
           <div class="form-item">
             <label for="password">密碼</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="請輸入密碼" required />
+            <input id="password" name="password" type="password" autocomplete="current-password"
+              placeholder="請輸入密碼" required />
           </div>
 
           <button type="submit" class="primary-btn">登入</button>
@@ -32,7 +35,8 @@
 
     <div id="app" class="app hidden">
       <header class="topbar">
-        <button id="menuButton" class="menu-button" aria-label="Open task details" aria-controls="sidebar" aria-expanded="false">
+        <button id="menuButton" class="menu-button" aria-label="Open task details"
+          aria-controls="sidebar" aria-expanded="false">
           <span></span>
           <span></span>
           <span></span>
@@ -41,15 +45,16 @@
           <h1>Life Grid</h1>
           <p id="userBadge" class="user-badge"></p>
         </div>
+        <button id="logoutButton" class="logout-btn">登出</button>
       </header>
 
       <main>
         <section class="grid-section" aria-label="Task Grid">
           <div class="level-legend" aria-hidden="true">
-            <div class="legend-item level-S">S × 1</div>
-            <div class="legend-item level-A">A × 8</div>
-            <div class="legend-item level-B">B × 8</div>
-            <div class="legend-item level-C">C × 8</div>
+            <div class="legend-item level-S">S &times; 1</div>
+            <div class="legend-item level-A">A &times; 8</div>
+            <div class="legend-item level-B">B &times; 8</div>
+            <div class="legend-item level-C">C &times; 8</div>
           </div>
           <div id="taskGrid" class="task-grid"></div>
         </section>
@@ -58,11 +63,27 @@
 
     <aside id="sidebar" class="sidebar" aria-hidden="true">
       <div class="sidebar-header">
-        <h2>Task Details</h2>
-        <button id="closeButton" class="close-button" aria-label="Close task details">×</button>
+        <h2 id="sidebarTitle">Task Details</h2>
+        <button id="closeButton" class="close-button" aria-label="Close task details">&times;</button>
       </div>
-
-      
+      <div class="sidebar-content">
+        <p class="sidebar-meta" id="sidebarLevel"></p>
+        <div class="sidebar-field">
+          <label for="sidebarTitleInput">任務標題</label>
+          <input id="sidebarTitleInput" type="text" placeholder="輸入標題..." />
+        </div>
+        <div class="sidebar-field">
+          <label for="sidebarDescInput">任務描述</label>
+          <textarea id="sidebarDescInput" placeholder="輸入描述..." rows="4"></textarea>
+        </div>
+        <div class="sidebar-field sidebar-check">
+          <label>
+            <input id="sidebarCompleted" type="checkbox" />
+            已完成
+          </label>
+        </div>
+        <button id="sidebarSaveBtn" class="primary-btn">儲存</button>
+      </div>
 
       <ul id="taskDetails" class="task-details"></ul>
     </aside>
