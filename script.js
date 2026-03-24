@@ -12,23 +12,64 @@ const START_NUMBER_BY_LEVEL = { S: 1, A: 2, B: 10, C: 18 };
 const levelLabel = { S: '金色', A: '淡藍色', B: '淡綠色', C: '灰色' };
 
 // ===================== DOM 元素 =====================
-const authScreen    = document.getElementById('authScreen');
-const app           = document.getElementById('app');
-const loginForm     = document.getElementById('loginForm');
-const authMessage   = document.getElementById('authMessage');
-const userBadge     = document.getElementById('userBadge');
-const gridElement   = document.getElementById('taskGrid');
-const sidebar       = document.getElementById('sidebar');
-const menuButton    = document.getElementById('menuButton');
-const closeButton   = document.getElementById('closeButton');
-const overlay       = document.getElementById('overlay');
-const logoutButton  = document.getElementById('logoutButton');
-const sidebarTitleEl    = document.getElementById('sidebarTitle');
-const sidebarLevelEl    = document.getElementById('sidebarLevel');
-const sidebarTitleInput = document.getElementById('sidebarTitleInput');
-const sidebarDescInput  = document.getElementById('sidebarDescInput');
-const sidebarCompleted  = document.getElementById('sidebarCompleted');
-const sidebarSaveBtn    = document.getElementById('sidebarSaveBtn');
+const REQUIRED_ELEMENT_IDS = [
+  'authScreen',
+  'app',
+  'loginForm',
+  'authMessage',
+  'userBadge',
+  'taskGrid',
+  'sidebar',
+  'menuButton',
+  'closeButton',
+  'overlay',
+  'logoutButton',
+  'sidebarTitle',
+  'sidebarLevel',
+  'sidebarTitleInput',
+  'sidebarDescInput',
+  'sidebarCompleted',
+  'sidebarSaveBtn',
+];
+
+const dom = {};
+const missingIds = [];
+
+REQUIRED_ELEMENT_IDS.forEach((id) => {
+  const element = document.getElementById(id);
+  dom[id] = element;
+  if (!element) missingIds.push(id);
+});
+
+if (missingIds.length > 0) {
+  console.error(
+    `找不到以下 DOM 元素（getElementById 回傳 null）：${missingIds.join(', ')}。` +
+      '常見原因：id 拼字不一致、元素尚未渲染、或 script.js 被掛在沒有這些元素的頁面。'
+  );
+}
+
+const authScreen = dom.authScreen;
+const app = dom.app;
+const loginForm = dom.loginForm;
+const authMessage = dom.authMessage;
+const userBadge = dom.userBadge;
+const gridElement = dom.taskGrid;
+const sidebar = dom.sidebar;
+const menuButton = dom.menuButton;
+const closeButton = dom.closeButton;
+const overlay = dom.overlay;
+const logoutButton = dom.logoutButton;
+const sidebarTitleEl = dom.sidebarTitle;
+const sidebarLevelEl = dom.sidebarLevel;
+const sidebarTitleInput = dom.sidebarTitleInput;
+const sidebarDescInput = dom.sidebarDescInput;
+const sidebarCompleted = dom.sidebarCompleted;
+const sidebarSaveBtn = dom.sidebarSaveBtn;
+
+if (loginForm) {
+  loginForm.setAttribute('method', 'post');
+  loginForm.setAttribute('action', '#');
+}
 
 // ===================== Grid 計算 =====================
 function getTaskLevel(row, col) {
@@ -139,7 +180,7 @@ function closeSidebar() {
   currentTask = null;
 }
 
-sidebarSaveBtn.addEventListener('click', async () => {
+sidebarSaveBtn?.addEventListener('click', async () => {
   if (!currentTask) return;
   const updates = {
     title: sidebarTitleInput.value.trim(),
@@ -155,22 +196,31 @@ sidebarSaveBtn.addEventListener('click', async () => {
 });
 
 // ===================== 登入 =====================
-loginForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const submitButton = loginForm.querySelector("button[type='submit']");
-  submitButton.disabled = true;
-  authMessage.textContent = '登入中...';
-  const formData = new FormData(loginForm);
-  const email = formData.get('username').toString().trim();
-  const password = formData.get('password').toString();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  submitButton.disabled = false;
-  if (error) {
-    authMessage.textContent = '登入失敗：' + error.message;
-    return;
-  }
-  await onLogin(data.user);
-});
+if (loginForm) {
+  loginForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const submitButton = loginForm.querySelector("button[type='submit']");
+    if (!submitButton) {
+      console.error("loginForm 內找不到 submit button，已取消送出。");
+      return;
+    }
+    submitButton.disabled = true;
+    authMessage.textContent = '登入中...';
+    const formData = new FormData(loginForm);
+    const email = formData.get('username').toString().trim();
+    const password = formData.get('password').toString();
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    submitButton.disabled = false;
+    if (error) {
+      authMessage.textContent = '登入失敗：' + error.message;
+      return;
+    }
+    await onLogin(data.user);
+  });
+} else {
+  console.error('loginForm 不存在：無法攔截 submit，請確認 <form id="loginForm"> 是否存在。');
+}
 
 async function onLogin(user) {
   await loadTasksFromDB();
@@ -182,7 +232,7 @@ async function onLogin(user) {
 }
 
 // ===================== 登出 =====================
-logoutButton.addEventListener('click', async () => {
+logoutButton?.addEventListener('click', async () => {
   await supabase.auth.signOut();
   tasks.forEach((t) => {
     t.title = `任務 ${t.id}`;
@@ -195,16 +245,18 @@ logoutButton.addEventListener('click', async () => {
 });
 
 // ===================== 事件 =====================
-closeSidebar && closeButton.addEventListener('click', closeSidebar);
-overlay.addEventListener('click', closeSidebar);
+closeButton?.addEventListener('click', closeSidebar);
+overlay?.addEventListener('click', closeSidebar);
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeSidebar();
+  if (e.key === 'Escape' && sidebar?.classList.contains('open')) closeSidebar();
 });
 
 // ===================== 初始化：檢查是否已登入 =====================
-(async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    await onLogin(session.user);
-  }
-})();
+if (missingIds.length === 0) {
+  (async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await onLogin(session.user);
+    }
+  })();
+}
