@@ -1,70 +1,52 @@
+// ===================== Supabase 設定 =====================
+const SUPABASE_URL = 'https://ylpjjbrdkgkxnavsodvm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlscGpqYnJka2dreG5hdnNvZHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5ODM2NDcsImV4cCI6MjA1NjU1OTY0N30.placeholder';
+const { createClient } = window.supabase;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===================== Grid 設定 =====================
 const GRID_SIZE = 5;
 const CENTER_INDEX = Math.floor(GRID_SIZE / 2);
-const LEVEL_ORDER = ["S", "A", "B", "C"];
-const START_NUMBER_BY_LEVEL = {
-  S: 1,
-  A: 2,
-  B: 10,
-  C: 18
-};
-const levelLabel = {
-  S: "金色",
-  A: "淡藍色",
-  B: "淡綠色",
-  C: "灰色"
-};
+const LEVEL_ORDER = ['S', 'A', 'B', 'C'];
+const START_NUMBER_BY_LEVEL = { S: 1, A: 2, B: 10, C: 18 };
+const levelLabel = { S: '金色', A: '淡藍色', B: '淡綠色', C: '灰色' };
 
-const users = [
-  {
-    rank: 1,
-    displayName: "No.1 用戶",
-    accountHash: "e058108d007bba71d20a52053fa5efe9144ac6d2f48757368ff653ea5da68e47",
-    passwordHash: "53e0bf8c098f31212bf5298bc6a47d026684332081b196156c9c5c79218d28c8"
-  },
-];
+// ===================== DOM 元素 =====================
+const authScreen   = document.getElementById('authScreen');
+const app          = document.getElementById('app');
+const loginForm    = document.getElementById('loginForm');
+const authMessage  = document.getElementById('authMessage');
+const userBadge    = document.getElementById('userBadge');
+const gridElement  = document.getElementById('taskGrid');
+const sidebar      = document.getElementById('sidebar');
+const menuButton   = document.getElementById('menuButton');
+const closeButton  = document.getElementById('closeButton');
+const overlay      = document.getElementById('overlay');
+const logoutButton = document.getElementById('logoutButton');
+const sidebarTitleEl    = document.getElementById('sidebarTitle');
+const sidebarLevelEl    = document.getElementById('sidebarLevel');
+const sidebarTitleInput = document.getElementById('sidebarTitleInput');
+const sidebarDescInput  = document.getElementById('sidebarDescInput');
+const sidebarCompleted  = document.getElementById('sidebarCompleted');
+const sidebarSaveBtn    = document.getElementById('sidebarSaveBtn');
 
-const authScreen = document.getElementById("authScreen");
-const app = document.getElementById("app");
-const loginForm = document.getElementById("loginForm");
-const authMessage = document.getElementById("authMessage");
-const userBadge = document.getElementById("userBadge");
-
-const gridElement = document.getElementById("taskGrid");
-const detailsElement = document.getElementById("taskDetails");
-const sidebar = document.getElementById("sidebar");
-const menuButton = document.getElementById("menuButton");
-const closeButton = document.getElementById("closeButton");
-const overlay = document.getElementById("overlay");
-
+// ===================== Grid 計算 =====================
 function getTaskLevel(row, col) {
-  const isCenter = row === CENTER_INDEX && col === CENTER_INDEX;
-  if (isCenter) {
-    return "S";
-  }
-
-  const isDiagonal = row === col || row + col === GRID_SIZE - 1;
-  if (isDiagonal) {
-    return "A";
-  }
-
-  const isMiddleCross = row === CENTER_INDEX || col === CENTER_INDEX;
-  return isMiddleCross ? "B" : "C";
+  if (row === CENTER_INDEX && col === CENTER_INDEX) return 'S';
+  if (row === col || row + col === GRID_SIZE - 1) return 'A';
+  if (row === CENTER_INDEX || col === CENTER_INDEX) return 'B';
+  return 'C';
 }
 
 const positions = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => {
   const row = Math.floor(index / GRID_SIZE);
   const col = index % GRID_SIZE;
-
-  return {
-    row,
-    col,
-    level: getTaskLevel(row, col)
-  };
+  return { row, col, level: getTaskLevel(row, col) };
 });
 
 const tasks = [];
 LEVEL_ORDER.forEach((level) => {
-  const levelPositions = positions.filter((position) => position.level === level);
+  const levelPositions = positions.filter((p) => p.level === level);
   levelPositions.forEach((position, index) => {
     const id = START_NUMBER_BY_LEVEL[level] + index;
     tasks.push({
@@ -73,107 +55,150 @@ LEVEL_ORDER.forEach((level) => {
       col: position.col,
       level,
       title: `任務 ${id}`,
-      description: `連線難度等級：${level}（${levelLabel[level]}）`
+      description: `連線難度等級：${level}（${levelLabel[level]}）`,
+      completed: false,
     });
   });
 });
 tasks.sort((a, b) => a.row - b.row || a.col - b.col);
 
+// ===================== 載入 DB 資料 =====================
+async function loadTasksFromDB() {
+  const { data, error } = await supabase.from('tasks').select('*');
+  if (error) { console.error('載入失敗:', error.message); return; }
+  data.forEach((dbTask) => {
+    const task = tasks.find((t) => t.id === dbTask.task_number);
+    if (task) {
+      if (dbTask.title)       task.title       = dbTask.title;
+      if (dbTask.description) task.description = dbTask.description;
+      task.completed = dbTask.completed;
+    }
+  });
+}
+
+// ===================== 儲存單一任務 =====================
+async function saveTask(taskId, updates) {
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task) return;
+  const payload = {
+    task_number: taskId,
+    row:         task.row,
+    col:         task.col,
+    level:       task.level,
+    title:       updates.title       !== undefined ? updates.title       : task.title,
+    description: updates.description !== undefined ? updates.description : task.description,
+    completed:   updates.completed   !== undefined ? updates.completed   : task.completed,
+  };
+  const { error } = await supabase
+    .from('tasks')
+    .upsert(payload, { onConflict: 'user_id,task_number' });
+  if (error) console.error('儲存失敗:', error.message);
+}
+
+// ===================== Render Grid =====================
 function renderGrid() {
+  gridElement.innerHTML = '';
   const fragment = document.createDocumentFragment();
   tasks.forEach((task, index) => {
-    const cell = document.createElement("button");
-    cell.type = "button";
-    cell.className = `task-cell level-${task.level}`;
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = `task-cell level-${task.level}${task.completed ? ' completed' : ''}`;
     cell.textContent = `${task.id}`;
-    cell.style.setProperty("--i", index + 1);
-    cell.setAttribute("aria-label", `${task.title}，難度 ${task.level}`);
-    cell.addEventListener("click", openSidebar);
+    cell.style.setProperty('--i', index + 1);
+    cell.setAttribute('aria-label', `${task.title}，難度 ${task.level}`);
+    cell.addEventListener('click', () => openSidebar(task));
     fragment.appendChild(cell);
   });
   gridElement.appendChild(fragment);
 }
 
-function renderDetails() {
-  const fragment = document.createDocumentFragment();
-  const tasksByIdAsc = [...tasks].sort((a, b) => a.id - b.id);
-  tasksByIdAsc.forEach((task) => {
-    const item = document.createElement("li");
-    item.className = `level-${task.level}`;
-    const title = document.createElement("div");
-    title.className = "task-id";
-    title.textContent = `${task.id}. ${task.title} (${task.level})`;
-    const description = document.createElement("p");
-    description.textContent = task.description;
-    description.style.margin = "0";
-    item.append(title, description);
-    fragment.appendChild(item);
-  });
-  detailsElement.appendChild(fragment);
-}
+// ===================== Sidebar =====================
+let currentTask = null;
 
-function openSidebar() {
-  sidebar.classList.add("open");
-  sidebar.setAttribute("aria-hidden", "false");
-  menuButton.setAttribute("aria-expanded", "true");
-  overlay.classList.remove("hidden");
+function openSidebar(task) {
+  currentTask = task;
+  sidebarTitleEl.textContent    = `任務 ${task.id}`;
+  sidebarLevelEl.textContent    = `難度：${task.level}（${levelLabel[task.level]}）`;
+  sidebarTitleInput.value       = task.title;
+  sidebarDescInput.value        = task.description;
+  sidebarCompleted.checked      = task.completed;
+  sidebar.classList.add('open');
+  sidebar.setAttribute('aria-hidden', 'false');
+  menuButton.setAttribute('aria-expanded', 'true');
+  overlay.classList.remove('hidden');
 }
 
 function closeSidebar() {
-  sidebar.classList.remove("open");
-  sidebar.setAttribute("aria-hidden", "true");
-  menuButton.setAttribute("aria-expanded", "false");
-  overlay.classList.add("hidden");
+  sidebar.classList.remove('open');
+  sidebar.setAttribute('aria-hidden', 'true');
+  menuButton.setAttribute('aria-expanded', 'false');
+  overlay.classList.add('hidden');
+  currentTask = null;
 }
 
-async function sha256(text) {
-  const encoded = new TextEncoder().encode(text);
-  const buffer = await crypto.subtle.digest("SHA-256", encoded);
-  const hashArray = Array.from(new Uint8Array(buffer));
-  return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
+sidebarSaveBtn.addEventListener('click', async () => {
+  if (!currentTask) return;
+  const updates = {
+    title:       sidebarTitleInput.value.trim(),
+    description: sidebarDescInput.value.trim(),
+    completed:   sidebarCompleted.checked,
+  };
+  currentTask.title       = updates.title;
+  currentTask.description = updates.description;
+  currentTask.completed   = updates.completed;
+  await saveTask(currentTask.id, updates);
+  renderGrid();
+  closeSidebar();
+});
 
-function setLoggedInUser(user) {
-  authScreen.classList.add("hidden");
-  app.classList.remove("hidden");
-  userBadge.textContent = user.displayName;
-
-
-  authMessage.textContent = "";
-}
-
-loginForm.addEventListener("submit", async (event) => {
+// ===================== 登入 =====================
+loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-
   const submitButton = loginForm.querySelector("button[type='submit']");
   submitButton.disabled = true;
+  authMessage.textContent = '登入中...';
 
   const formData = new FormData(loginForm);
-  const username = (formData.get("username") || "").toString().trim();
-  const password = (formData.get("password") || "").toString();
+  const email    = formData.get('username').toString().trim();
+  const password = formData.get('password').toString();
 
-  const accountHash = await sha256(username);
-  const passwordHash = await sha256(password);
-  const matchedUser = users.find((user) => user.accountHash === accountHash && user.passwordHash === passwordHash);
-
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   submitButton.disabled = false;
 
-  if (!matchedUser) {
-    authMessage.textContent = "登入失敗：帳號或密碼錯誤";
+  if (error) {
+    authMessage.textContent = '登入失敗：' + error.message;
     return;
   }
-
-  setLoggedInUser(matchedUser);
+  await onLogin(data.user);
 });
 
-menuButton.addEventListener("click", openSidebar);
-closeButton.addEventListener("click", closeSidebar);
-overlay.addEventListener("click", closeSidebar);
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    closeSidebar();
+async function onLogin(user) {
+  await loadTasksFromDB();
+  authScreen.classList.add('hidden');
+  app.classList.remove('hidden');
+  authMessage.textContent = '';
+  userBadge.textContent = user.email;
+  renderGrid();
+}
+
+// ===================== 登出 =====================
+logoutButton.addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  tasks.forEach((t) => { t.title = `任務 ${t.id}`; t.description = `連線難度等級：${t.level}（${levelLabel[t.level]}）`; t.completed = false; });
+  app.classList.add('hidden');
+  authScreen.classList.remove('hidden');
+  gridElement.innerHTML = '';
+});
+
+// ===================== 事件 =====================
+closeSidebar && closeButton.addEventListener('click', closeSidebar);
+overlay.addEventListener('click', closeSidebar);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+
+// ===================== 初始化：檢查是否已登入 =====================
+(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    await onLogin(session.user);
   }
-});
-
-renderGrid();
-renderDetails();
+})();
