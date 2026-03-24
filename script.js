@@ -1,6 +1,6 @@
 // ===================== Supabase 設定 =====================
 const SUPABASE_URL = 'https://ylpjjbrdkgkxnavsodvm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlscGpqYnJka2dreG5hdnNvZHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5ODM2NDcsImV4cCI6MjA1NjU1OTY0N30.placeholder';
+const SUPABASE_ANON_KEY = 'sb_publishable_fladNfkVAfvrHaH1qz3Dww_kHl0j2Ng';
 const { createClient } = window.supabase;
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
