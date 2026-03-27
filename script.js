@@ -13,8 +13,20 @@ const levelLabel = { S: '金色', A: '淡藍色', B: '淡綠色', C: '灰色' };
 const DEMO_CREDENTIALS = {
   username: 'test',
   password: 'test',
-  aliases: ['test', 'test帳號', 'test账号', '測試', '測試帳號', 'demo', 'guest'],
+  aliases: ['test', 'test@test.com', 'test帳號', 'test账号', '測試', '測試帳號', 'demo', 'guest'],
 };
+
+function normalizeAccountInput(value) {
+  return String(value ?? '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '');
+}
+
+function normalizePasswordInput(value) {
+  return String(value ?? '').normalize('NFKC').trim();
+}
 
 // ===================== DOM 元素 =====================
 const REQUIRED_ELEMENT_IDS = [
@@ -215,21 +227,29 @@ if (loginForm) {
     submitButton.disabled = true;
     authMessage.textContent = '登入中...';
     const formData = new FormData(loginForm);
-    const username = formData.get('username').toString().trim();
-    const password = formData.get('password').toString();
-    const normalizedUsername = username.toLowerCase().replace(/\s+/g, '');
-    const normalizedAliases = DEMO_CREDENTIALS.aliases.map((alias) =>
-      alias.toLowerCase().replace(/\s+/g, '')
+    const username = String(formData.get('username') ?? '').trim();
+    const password = String(formData.get('password') ?? '');
+    const normalizedUsername = normalizeAccountInput(username);
+    const normalizedPassword = normalizePasswordInput(password);
+    const normalizedAliases = new Set(
+      DEMO_CREDENTIALS.aliases.map((alias) => normalizeAccountInput(alias))
     );
+    const normalizedDemoPassword = normalizePasswordInput(DEMO_CREDENTIALS.password);
     const isDemoLogin =
-      normalizedAliases.includes(normalizedUsername) &&
-      password === DEMO_CREDENTIALS.password;
+      normalizedAliases.has(normalizedUsername) &&
+      normalizedPassword === normalizedDemoPassword;
 
     if (isDemoLogin) {
       isDemoSession = true;
       authMessage.textContent = '';
       await onLogin({ email: 'test（測試帳號）' });
       submitButton.disabled = false;
+      return;
+    }
+
+    if (normalizedAliases.has(normalizedUsername)) {
+      submitButton.disabled = false;
+      authMessage.textContent = '測試帳號密碼錯誤，請使用 test / test。';
       return;
     }
 
