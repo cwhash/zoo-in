@@ -10,7 +10,11 @@ const CENTER_INDEX = Math.floor(GRID_SIZE / 2);
 const LEVEL_ORDER = ['S', 'A', 'B', 'C'];
 const START_NUMBER_BY_LEVEL = { S: 1, A: 2, B: 10, C: 18 };
 const levelLabel = { S: '金色', A: '淡藍色', B: '淡綠色', C: '灰色' };
-const DEMO_CREDENTIALS = { username: 'test', password: 'test' };
+const DEMO_CREDENTIALS = {
+  username: 'test',
+  password: 'test',
+  aliases: ['test', 'test帳號', 'test账号', '測試', '測試帳號', 'demo', 'guest'],
+};
 
 // ===================== DOM 元素 =====================
 const REQUIRED_ELEMENT_IDS = [
@@ -213,8 +217,12 @@ if (loginForm) {
     const formData = new FormData(loginForm);
     const username = formData.get('username').toString().trim();
     const password = formData.get('password').toString();
+    const normalizedUsername = username.toLowerCase().replace(/\s+/g, '');
+    const normalizedAliases = DEMO_CREDENTIALS.aliases.map((alias) =>
+      alias.toLowerCase().replace(/\s+/g, '')
+    );
     const isDemoLogin =
-      username.toLowerCase() === DEMO_CREDENTIALS.username &&
+      normalizedAliases.includes(normalizedUsername) &&
       password === DEMO_CREDENTIALS.password;
 
     if (isDemoLogin) {
