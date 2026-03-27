@@ -10,6 +10,7 @@ const CENTER_INDEX = Math.floor(GRID_SIZE / 2);
 const LEVEL_ORDER = ['S', 'A', 'B', 'C'];
 const START_NUMBER_BY_LEVEL = { S: 1, A: 2, B: 10, C: 18 };
 const levelLabel = { S: '金色', A: '淡藍色', B: '淡綠色', C: '灰色' };
+const DEMO_CREDENTIALS = { username: 'test', password: 'test' };
 
 // ===================== DOM 元素 =====================
 const REQUIRED_ELEMENT_IDS = [
@@ -122,6 +123,7 @@ async function loadTasksFromDB() {
 
 // ===================== 儲存單一任務 =====================
 async function saveTask(taskId, updates) {
+  if (isDemoSession) return;
   const task = tasks.find((t) => t.id === taskId);
   if (!task) return;
   const payload = {
@@ -158,6 +160,7 @@ function renderGrid() {
 
 // ===================== Sidebar =====================
 let currentTask = null;
+let isDemoSession = false;
 
 function openSidebar(task) {
   currentTask = task;
@@ -208,8 +211,22 @@ if (loginForm) {
     submitButton.disabled = true;
     authMessage.textContent = '登入中...';
     const formData = new FormData(loginForm);
-    const email = formData.get('username').toString().trim();
+    const username = formData.get('username').toString().trim();
     const password = formData.get('password').toString();
+    const isDemoLogin =
+      username.toLowerCase() === DEMO_CREDENTIALS.username &&
+      password === DEMO_CREDENTIALS.password;
+
+    if (isDemoLogin) {
+      isDemoSession = true;
+      authMessage.textContent = '';
+      await onLogin({ email: 'test（測試帳號）' });
+      submitButton.disabled = false;
+      return;
+    }
+
+    isDemoSession = false;
+    const email = username;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     submitButton.disabled = false;
     if (error) {
@@ -223,7 +240,7 @@ if (loginForm) {
 }
 
 async function onLogin(user) {
-  await loadTasksFromDB();
+  if (!isDemoSession) await loadTasksFromDB();
   authScreen.classList.add('hidden');
   app.classList.remove('hidden');
   authMessage.textContent = '';
@@ -233,7 +250,8 @@ async function onLogin(user) {
 
 // ===================== 登出 =====================
 logoutButton?.addEventListener('click', async () => {
-  await supabase.auth.signOut();
+  if (!isDemoSession) await supabase.auth.signOut();
+  isDemoSession = false;
   tasks.forEach((t) => {
     t.title = `任務 ${t.id}`;
     t.description = `連線難度等級：${t.level}（${levelLabel[t.level]}）`;
