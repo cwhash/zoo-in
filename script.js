@@ -28,6 +28,17 @@ function normalizePasswordInput(value) {
   return String(value ?? '').normalize('NFKC').trim();
 }
 
+function parseCombinedDemoInput(value) {
+  const text = String(value ?? '').normalize('NFKC');
+  const slashPattern = /\s*[\/／]\s*/;
+  if (!slashPattern.test(text)) return null;
+  const [left = '', right = ''] = text.split(slashPattern, 2);
+  return {
+    username: normalizeAccountInput(left),
+    password: normalizePasswordInput(right),
+  };
+}
+
 // ===================== DOM 元素 =====================
 const REQUIRED_ELEMENT_IDS = [
   'authScreen',
@@ -178,6 +189,12 @@ function renderGrid() {
 let currentTask = null;
 let isDemoSession = false;
 
+async function loginWithDemoAccount() {
+  isDemoSession = true;
+  authMessage.textContent = '';
+  await onLogin({ email: 'test（測試帳號）' });
+}
+
 function openSidebar(task) {
   currentTask = task;
   sidebarTitleEl.textContent = `任務 ${task.id}`;
@@ -232,22 +249,34 @@ if (loginForm) {
     const normalizedUsername = normalizeAccountInput(username);
     const normalizedPassword = normalizePasswordInput(password);
     const normalizedAliases = new Set(
-      DEMO_CREDENTIALS.aliases.map((alias) => normalizeAccountInput(alias))
+      [DEMO_CREDENTIALS.username, ...DEMO_CREDENTIALS.aliases].map((alias) =>
+        normalizeAccountInput(alias)
+      )
     );
     const normalizedDemoPassword = normalizePasswordInput(DEMO_CREDENTIALS.password);
-    const isDemoLogin =
-      normalizedAliases.has(normalizedUsername) &&
-      normalizedPassword === normalizedDemoPassword;
+    const combinedInput = parseCombinedDemoInput(username);
+    const usernameCandidates = new Set([normalizedUsername]);
+    const passwordCandidates = new Set([normalizedPassword]);
+    if (combinedInput) {
+      if (combinedInput.username) usernameCandidates.add(combinedInput.username);
+      if (combinedInput.password) passwordCandidates.add(combinedInput.password);
+    }
+
+    const hasDemoAlias = Array.from(usernameCandidates).some((value) =>
+      normalizedAliases.has(value)
+    );
+    const hasDemoPassword = Array.from(passwordCandidates).some(
+      (value) => value === normalizedDemoPassword
+    );
+    const isDemoLogin = hasDemoAlias && hasDemoPassword;
 
     if (isDemoLogin) {
-      isDemoSession = true;
-      authMessage.textContent = '';
-      await onLogin({ email: 'test（測試帳號）' });
+      await loginWithDemoAccount();
       submitButton.disabled = false;
       return;
     }
 
-    if (normalizedAliases.has(normalizedUsername)) {
+    if (hasDemoAlias) {
       submitButton.disabled = false;
       authMessage.textContent = '測試帳號密碼錯誤，請使用 test / test。';
       return;

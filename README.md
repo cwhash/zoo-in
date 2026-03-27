@@ -19,6 +19,7 @@ Life Grid is a lightweight web experience designed for mobile users. The home sc
 - Login screen supports **account/password login**.
 - Available account:
   - **Demo account**: username/email `test` (also supports `test@test.com`), password `test` (for preview only)
+- Demo login now also accepts combined input like `test / test` (or `test／test`) in the account field to reduce formatting/input issues during testing.
 - You can still use Supabase email/password accounts for normal data-backed login.
 
 ## 🌍 GitHub Pages Deployment
