@@ -5,46 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Life Grid</title>
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
-    <section id="authScreen" class="auth-screen">
-      <div class="auth-card">
-        <h1>Life Grid 登入</h1>
-        <p class="auth-subtitle">使用 Email 與密碼登入，或測試帳號（test / test）快速體驗。</p>
-
-        <form id="loginForm" class="login-form">
-          <div class="form-item">
-            <label for="username">Email / 帳號</label>
-            <input id="username" name="username" type="text" autocomplete="username"
-              placeholder="請輸入 Email 或測試帳號" required />
-          </div>
-
-          <div class="form-item">
-            <label for="password">密碼</label>
-            <input id="password" name="password" type="password" autocomplete="current-password"
-              placeholder="請輸入密碼" required />
-          </div>
-
-          <button type="submit" class="primary-btn">登入</button>
-        </form>
-        <p id="authMessage" class="auth-message" role="status" aria-live="polite"></p>
-      </div>
-    </section>
-
-    <div id="app" class="app hidden">
+    <div id="app" class="app">
       <header class="topbar">
-        <button id="menuButton" class="menu-button" aria-label="Open task details"
-          aria-controls="sidebar" aria-expanded="false">
+        <button
+          id="menuButton"
+          class="menu-button"
+          aria-label="Open task details"
+          aria-controls="sidebar"
+          aria-expanded="false"
+        >
           <span></span>
           <span></span>
           <span></span>
         </button>
-        <div>
-          <h1>Life Grid</h1>
-          <p id="userBadge" class="user-badge"></p>
-        </div>
-        <button id="logoutButton" class="logout-btn">登出</button>
+        <h1>Life Grid</h1>
       </header>
 
       <main>
