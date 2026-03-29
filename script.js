@@ -5,7 +5,7 @@ const LEVEL_ORDER = ['S', 'A', 'B', 'C', 'N'];
 const LEVEL_QUOTA = { S: 1, A: 2, B: 4, C: 8, N: 10 };
 const levelLabel = {
   S: '金',
-  A: '紫',
+  A: '粉',
   B: '藍',
   C: '綠',
   N: '灰',
@@ -69,6 +69,7 @@ LEVEL_ORDER.forEach((level) => {
       title: `${level}${i} 任務`,
       description: `${level} 級任務（${levelLabel[level]}）`,
       completed: false,
+      completedAt: '',
     });
   }
 });
@@ -84,6 +85,9 @@ function renderGrid() {
     const cell = document.createElement('button');
     cell.type = 'button';
     cell.className = `task-cell level-${task.level}${task.completed ? ' completed' : ''}`;
+    if (task.completedAt) {
+      cell.dataset.stampDate = task.completedAt;
+    }
     cell.style.setProperty('--i', index + 1);
     cell.setAttribute('aria-label', `${task.code}，${task.title}`);
     cell.addEventListener('click', () => {
@@ -106,8 +110,11 @@ function renderTaskDetails() {
       const item = document.createElement('li');
       item.className = 'task-detail-item';
 
-      const header = document.createElement('div');
-      header.className = 'task-detail-head';
+      const detail = document.createElement('details');
+      detail.className = 'task-detail-expand';
+
+      const summary = document.createElement('summary');
+      summary.className = 'task-detail-head';
 
       const code = document.createElement('span');
       code.className = `task-code level-${task.level}`;
@@ -120,25 +127,55 @@ function renderTaskDetails() {
       checkbox.checked = task.completed;
       checkbox.addEventListener('change', () => {
         task.completed = checkbox.checked;
+        task.completedAt = checkbox.checked ? formatStampDate(new Date()) : '';
         renderGrid();
       });
       statusLabel.append(checkbox, document.createTextNode('完成'));
 
-      header.append(code, statusLabel);
+      summary.append(code, statusLabel);
 
-      const title = document.createElement('p');
-      title.className = 'task-detail-title';
-      title.textContent = task.title;
+      const body = document.createElement('div');
+      body.className = 'task-detail-body';
 
-      const description = document.createElement('p');
-      description.className = 'task-detail-desc';
-      description.textContent = task.description;
+      const titleLabel = document.createElement('label');
+      titleLabel.className = 'task-field-label';
+      titleLabel.textContent = '標題';
+      const titleInput = document.createElement('input');
+      titleInput.className = 'task-input';
+      titleInput.type = 'text';
+      titleInput.value = task.title;
+      titleInput.addEventListener('input', () => {
+        task.title = titleInput.value.trim() || `${task.code} 任務`;
+        renderGrid();
+      });
+      titleLabel.appendChild(titleInput);
 
-      item.append(header, title, description);
+      const descriptionLabel = document.createElement('label');
+      descriptionLabel.className = 'task-field-label';
+      descriptionLabel.textContent = '內容';
+      const descriptionInput = document.createElement('textarea');
+      descriptionInput.className = 'task-textarea';
+      descriptionInput.rows = 3;
+      descriptionInput.value = task.description;
+      descriptionInput.addEventListener('input', () => {
+        task.description = descriptionInput.value.trim() || `${task.level} 級任務（${levelLabel[task.level]}）`;
+      });
+      descriptionLabel.appendChild(descriptionInput);
+
+      body.append(titleLabel, descriptionLabel);
+      detail.append(summary, body);
+      item.append(detail);
       fragment.appendChild(item);
     });
 
   taskDetails.appendChild(fragment);
+}
+
+function formatStampDate(date) {
+  const year = String(date.getFullYear()).slice(-2);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day}`;
 }
 
 // ===================== Sidebar =====================
