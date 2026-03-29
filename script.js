@@ -1,6 +1,5 @@
 // ===================== Grid 設定 =====================
 const GRID_SIZE = 5;
-const CENTER_INDEX = Math.floor(GRID_SIZE / 2);
 const LEVEL_ORDER = ['S', 'A', 'B', 'C', 'N'];
 const LEVEL_QUOTA = { S: 1, A: 2, B: 4, C: 8, N: 10 };
 const levelLabel = {
@@ -9,6 +8,13 @@ const levelLabel = {
   B: '藍',
   C: '綠',
   N: '灰',
+};
+
+const LEVEL_POSITIONS = {
+  S: [13],
+  A: [1, 25],
+  B: [7, 9, 17, 19],
+  C: [2, 4, 6, 10, 16, 20, 22, 24],
 };
 
 // ===================== DOM 元素 =====================
@@ -35,48 +41,58 @@ const overlay = dom.overlay;
 const taskDetails = dom.taskDetails;
 
 // ===================== 任務生成 =====================
-function getDistanceScore(row, col) {
-  return Math.abs(row - CENTER_INDEX) + Math.abs(col - CENTER_INDEX);
+function getLevelByCell(cellNumber) {
+  for (const [level, cells] of Object.entries(LEVEL_POSITIONS)) {
+    if (cells.includes(cellNumber)) return level;
+  }
+  return 'N';
 }
 
-function getTieBreaker(row, col) {
-  return Math.abs(row - CENTER_INDEX) * 10 + Math.abs(col - CENTER_INDEX);
-}
+function buildTasks() {
+  const levelCounters = { S: 0, A: 0, B: 0, C: 0, N: 0 };
+  const nextTasks = [];
 
-const positions = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => {
-  const row = Math.floor(index / GRID_SIZE);
-  const col = index % GRID_SIZE;
-  return {
-    row,
-    col,
-    distance: getDistanceScore(row, col),
-    tie: getTieBreaker(row, col),
-  };
-}).sort((a, b) => a.distance - b.distance || a.tie - b.tie || a.row - b.row || a.col - b.col);
+  for (let cellNumber = 1; cellNumber <= GRID_SIZE * GRID_SIZE; cellNumber += 1) {
+    const row = Math.floor((cellNumber - 1) / GRID_SIZE);
+    const col = (cellNumber - 1) % GRID_SIZE;
+    const level = getLevelByCell(cellNumber);
+    levelCounters[level] += 1;
+    const count = levelCounters[level];
 
-let cursor = 0;
-const tasks = [];
-
-LEVEL_ORDER.forEach((level) => {
-  for (let i = 1; i <= LEVEL_QUOTA[level]; i += 1) {
-    const position = positions[cursor];
-    cursor += 1;
-    tasks.push({
-      code: `${level}${i}`,
-      row: position.row,
-      col: position.col,
+    nextTasks.push({
+      code: `${level}${count}`,
+      row,
+      col,
       level,
-      title: `${level}${i} 任務`,
+      title: `${level}${count} 任務`,
       description: `${level} 級任務（${levelLabel[level]}）`,
       completed: false,
       completedAt: '',
     });
   }
-});
 
-tasks.sort((a, b) => a.row - b.row || a.col - b.col);
+  const generatedQuota = Object.fromEntries(Object.entries(levelCounters));
+  const quotaMismatch = LEVEL_ORDER.find((level) => generatedQuota[level] !== LEVEL_QUOTA[level]);
+  if (quotaMismatch) {
+    console.warn('任務配額與設定不一致：', { expected: LEVEL_QUOTA, actual: generatedQuota });
+  }
+
+  return nextTasks;
+}
+
+const tasks = buildTasks();
 
 // ===================== Render Grid =====================
+function focusTaskDetail(index) {
+  const detailItem = taskDetails.querySelector(`[data-task-index="${index}"]`);
+  if (!detailItem) return;
+
+  const details = detailItem.querySelector('details');
+  if (details) details.open = true;
+
+  detailItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function renderGrid() {
   gridElement.innerHTML = '';
   const fragment = document.createDocumentFragment();
@@ -89,9 +105,11 @@ function renderGrid() {
       cell.dataset.stampDate = task.completedAt;
     }
     cell.style.setProperty('--i', index + 1);
+    cell.textContent = task.code;
     cell.setAttribute('aria-label', `${task.code}，${task.title}`);
     cell.addEventListener('click', () => {
-      // 依需求：點主頁格子不顯示任務內容
+      openSidebar();
+      focusTaskDetail(index);
     });
     fragment.appendChild(cell);
   });
@@ -107,8 +125,10 @@ function renderTaskDetails() {
     .slice()
     .sort((a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level) || Number(a.code.slice(1)) - Number(b.code.slice(1)))
     .forEach((task) => {
+      const taskIndex = tasks.indexOf(task);
       const item = document.createElement('li');
       item.className = 'task-detail-item';
+      item.dataset.taskIndex = String(taskIndex);
 
       const detail = document.createElement('details');
       detail.className = 'task-detail-expand';

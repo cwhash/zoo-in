@@ -411,6 +411,7 @@ body {
 
 .task-cell.completed::after {
   content: attr(data-stamp-date);
+  animation: none;
   position: absolute;
   top: 50%;
   left: 50%;
