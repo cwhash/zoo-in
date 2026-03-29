@@ -1,57 +1,18 @@
-// ===================== Supabase 設定 =====================
-const SUPABASE_URL = 'https://ylpjjbrdkgkxnavsodvm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlscGpqYnJka2dreG5hdnNvZHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MjY4NzcsImV4cCI6MjA4OTMwMjg3N30.rV-Vzz4iElLOEKc5CKvNGu38ZMvSsK_E2hg_lIGhfQk';
-const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 // ===================== Grid 設定 =====================
 const GRID_SIZE = 5;
 const CENTER_INDEX = Math.floor(GRID_SIZE / 2);
 const LEVEL_ORDER = ['S', 'A', 'B', 'C'];
 const START_NUMBER_BY_LEVEL = { S: 1, A: 2, B: 10, C: 18 };
 const levelLabel = { S: '金色', A: '淡藍色', B: '淡綠色', C: '灰色' };
-const DEMO_CREDENTIALS = {
-  username: 'test',
-  password: 'test',
-  aliases: ['test', 'test@test.com', 'test帳號', 'test账号', '測試', '測試帳號', 'demo', 'guest'],
-};
-
-function normalizeAccountInput(value) {
-  return String(value ?? '')
-    .normalize('NFKC')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '');
-}
-
-function normalizePasswordInput(value) {
-  return String(value ?? '').normalize('NFKC').trim();
-}
-
-function parseCombinedDemoInput(value) {
-  const text = String(value ?? '').normalize('NFKC');
-  const slashPattern = /\s*[\/／]\s*/;
-  if (!slashPattern.test(text)) return null;
-  const [left = '', right = ''] = text.split(slashPattern, 2);
-  return {
-    username: normalizeAccountInput(left),
-    password: normalizePasswordInput(right),
-  };
-}
 
 // ===================== DOM 元素 =====================
 const REQUIRED_ELEMENT_IDS = [
-  'authScreen',
   'app',
-  'loginForm',
-  'authMessage',
-  'userBadge',
   'taskGrid',
   'sidebar',
   'menuButton',
   'closeButton',
   'overlay',
-  'logoutButton',
   'sidebarTitle',
   'sidebarLevel',
   'sidebarTitleInput',
@@ -76,28 +37,17 @@ if (missingIds.length > 0) {
   );
 }
 
-const authScreen = dom.authScreen;
-const app = dom.app;
-const loginForm = dom.loginForm;
-const authMessage = dom.authMessage;
-const userBadge = dom.userBadge;
 const gridElement = dom.taskGrid;
 const sidebar = dom.sidebar;
 const menuButton = dom.menuButton;
 const closeButton = dom.closeButton;
 const overlay = dom.overlay;
-const logoutButton = dom.logoutButton;
 const sidebarTitleEl = dom.sidebarTitle;
 const sidebarLevelEl = dom.sidebarLevel;
 const sidebarTitleInput = dom.sidebarTitleInput;
 const sidebarDescInput = dom.sidebarDescInput;
 const sidebarCompleted = dom.sidebarCompleted;
 const sidebarSaveBtn = dom.sidebarSaveBtn;
-
-if (loginForm) {
-  loginForm.setAttribute('method', 'post');
-  loginForm.setAttribute('action', '#');
-}
 
 // ===================== Grid 計算 =====================
 function getTaskLevel(row, col) {
@@ -131,43 +81,6 @@ LEVEL_ORDER.forEach((level) => {
 });
 tasks.sort((a, b) => a.row - b.row || a.col - b.col);
 
-// ===================== 載入 DB 資料 =====================
-async function loadTasksFromDB() {
-  const { data, error } = await supabase.from('tasks').select('*');
-  if (error) {
-    console.error('載入失敗:', error.message);
-    return;
-  }
-  data.forEach((dbTask) => {
-    const task = tasks.find((t) => t.id === dbTask.task_number);
-    if (task) {
-      if (dbTask.title) task.title = dbTask.title;
-      if (dbTask.description) task.description = dbTask.description;
-      task.completed = dbTask.completed;
-    }
-  });
-}
-
-// ===================== 儲存單一任務 =====================
-async function saveTask(taskId, updates) {
-  if (isDemoSession) return;
-  const task = tasks.find((t) => t.id === taskId);
-  if (!task) return;
-  const payload = {
-    task_number: taskId,
-    row: task.row,
-    col: task.col,
-    level: task.level,
-    title: updates.title !== undefined ? updates.title : task.title,
-    description: updates.description !== undefined ? updates.description : task.description,
-    completed: updates.completed !== undefined ? updates.completed : task.completed,
-  };
-  const { error } = await supabase
-    .from('tasks')
-    .upsert(payload, { onConflict: 'user_id,task_number' });
-  if (error) console.error('儲存失敗:', error.message);
-}
-
 // ===================== Render Grid =====================
 function renderGrid() {
   gridElement.innerHTML = '';
@@ -187,13 +100,6 @@ function renderGrid() {
 
 // ===================== Sidebar =====================
 let currentTask = null;
-let isDemoSession = false;
-
-async function loginWithDemoAccount() {
-  isDemoSession = true;
-  authMessage.textContent = '';
-  await onLogin({ email: 'test（測試帳號）' });
-}
 
 function openSidebar(task) {
   currentTask = task;
@@ -216,107 +122,13 @@ function closeSidebar() {
   currentTask = null;
 }
 
-sidebarSaveBtn?.addEventListener('click', async () => {
+sidebarSaveBtn?.addEventListener('click', () => {
   if (!currentTask) return;
-  const updates = {
-    title: sidebarTitleInput.value.trim(),
-    description: sidebarDescInput.value.trim(),
-    completed: sidebarCompleted.checked,
-  };
-  currentTask.title = updates.title;
-  currentTask.description = updates.description;
-  currentTask.completed = updates.completed;
-  await saveTask(currentTask.id, updates);
+  currentTask.title = sidebarTitleInput.value.trim();
+  currentTask.description = sidebarDescInput.value.trim();
+  currentTask.completed = sidebarCompleted.checked;
   renderGrid();
   closeSidebar();
-});
-
-// ===================== 登入 =====================
-if (loginForm) {
-  loginForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const submitButton = loginForm.querySelector("button[type='submit']");
-    if (!submitButton) {
-      console.error("loginForm 內找不到 submit button，已取消送出。");
-      return;
-    }
-    submitButton.disabled = true;
-    authMessage.textContent = '登入中...';
-    const formData = new FormData(loginForm);
-    const username = String(formData.get('username') ?? '').trim();
-    const password = String(formData.get('password') ?? '');
-    const normalizedUsername = normalizeAccountInput(username);
-    const normalizedPassword = normalizePasswordInput(password);
-    const normalizedAliases = new Set(
-      [DEMO_CREDENTIALS.username, ...DEMO_CREDENTIALS.aliases].map((alias) =>
-        normalizeAccountInput(alias)
-      )
-    );
-    const normalizedDemoPassword = normalizePasswordInput(DEMO_CREDENTIALS.password);
-    const combinedInput = parseCombinedDemoInput(username);
-    const usernameCandidates = new Set([normalizedUsername]);
-    const passwordCandidates = new Set([normalizedPassword]);
-    if (combinedInput) {
-      if (combinedInput.username) usernameCandidates.add(combinedInput.username);
-      if (combinedInput.password) passwordCandidates.add(combinedInput.password);
-    }
-
-    const hasDemoAlias = Array.from(usernameCandidates).some((value) =>
-      normalizedAliases.has(value)
-    );
-    const hasDemoPassword = Array.from(passwordCandidates).some(
-      (value) => value === normalizedDemoPassword
-    );
-    const isDemoLogin = hasDemoAlias && hasDemoPassword;
-
-    if (isDemoLogin) {
-      await loginWithDemoAccount();
-      submitButton.disabled = false;
-      return;
-    }
-
-    if (hasDemoAlias) {
-      submitButton.disabled = false;
-      authMessage.textContent = '測試帳號密碼錯誤，請使用 test / test。';
-      return;
-    }
-
-    isDemoSession = false;
-    const email = username;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    submitButton.disabled = false;
-    if (error) {
-      authMessage.textContent = '登入失敗：' + error.message;
-      return;
-    }
-    await onLogin(data.user);
-  });
-} else {
-  console.error('loginForm 不存在：無法攔截 submit，請確認 <form id="loginForm"> 是否存在。');
-}
-
-async function onLogin(user) {
-  if (!isDemoSession) await loadTasksFromDB();
-  authScreen.classList.add('hidden');
-  app.classList.remove('hidden');
-  authMessage.textContent = '';
-  userBadge.textContent = user.email;
-  renderGrid();
-}
-
-// ===================== 登出 =====================
-logoutButton?.addEventListener('click', async () => {
-  if (!isDemoSession) await supabase.auth.signOut();
-  isDemoSession = false;
-  tasks.forEach((t) => {
-    t.title = `任務 ${t.id}`;
-    t.description = `連線難度等級：${t.level}（${levelLabel[t.level]}）`;
-    t.completed = false;
-  });
-  app.classList.add('hidden');
-  authScreen.classList.remove('hidden');
-  gridElement.innerHTML = '';
 });
 
 // ===================== 事件 =====================
@@ -326,12 +138,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && sidebar?.classList.contains('open')) closeSidebar();
 });
 
-// ===================== 初始化：檢查是否已登入 =====================
 if (missingIds.length === 0) {
-  (async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await onLogin(session.user);
-    }
-  })();
+  renderGrid();
 }

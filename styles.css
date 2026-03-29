@@ -30,103 +30,11 @@ body {
   font-family: "Inter", "Noto Sans TC", Arial, sans-serif;
 }
 
-.auth-screen {
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
-}
-
-.auth-card {
-  width: min(100%, 420px);
-  border-radius: 24px;
-  background: var(--panel-solid);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 1.2rem;
-}
-
-.auth-card h1 {
-  margin: 0;
-  font-size: clamp(1.35rem, 6vw, 1.65rem);
-}
-
-.auth-subtitle {
-  margin: 0.4rem 0 1.05rem;
-  color: var(--muted);
-  line-height: 1.5;
-  font-size: 0.95rem;
-}
-
-.login-form {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.form-item {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.login-form label {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: #2a3657;
-}
-
-.login-form input,
-.primary-btn {
-  min-height: 48px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  padding: 0 0.9rem;
-  font: inherit;
-  font-size: 1rem;
-}
-
-.login-form input {
-  background: #fbfcff;
-}
-
-.login-form input:focus-visible,
-.primary-btn:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--primary) 45%, white);
-  outline-offset: 1px;
-}
-
-.primary-btn {
-  margin-top: 0.3rem;
-  background: var(--primary);
-  color: #fff;
-  border-color: transparent;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-}
-
-.primary-btn:disabled {
-  opacity: 0.62;
-  cursor: not-allowed;
-}
-
-.auth-message {
-  min-height: 1.4em;
-  margin: 0.85rem 0 0;
-  color: #bf2c2c;
-  font-size: 0.9rem;
-}
-
 .app {
   max-width: 600px;
   min-height: 100dvh;
   margin: 0 auto;
   padding: 1rem 1rem 2rem;
-}
-
-.user-badge {
-  margin: 0.2rem 0 0;
-  color: var(--muted);
-  font-size: 0.88rem;
 }
 
 .topbar {
@@ -332,29 +240,6 @@ body {
   color: #495269;
 }
 
-.admin-panel {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.7rem;
-  margin-bottom: 0.8rem;
-  background: #f6f8ff;
-  font-size: 0.86rem;
-}
-
-.admin-panel h3 {
-  margin: 0 0 0.5rem;
-}
-
-.admin-panel p {
-  margin: 0.2rem 0;
-}
-
-.hash-line code {
-  display: inline-block;
-  max-width: 100%;
-  overflow: auto;
-}
-
 .task-details {
   list-style: none;
   padding: 0;
@@ -363,33 +248,6 @@ body {
   gap: 0.65rem;
   max-height: calc(100dvh - 90px);
   overflow: auto;
-}
-
-.task-details li {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.7rem;
-}
-
-.task-details li.level-S {
-  background: color-mix(in srgb, var(--level-s) 48%, white);
-}
-
-.task-details li.level-A {
-  background: color-mix(in srgb, var(--level-a) 56%, white);
-}
-
-.task-details li.level-B {
-  background: color-mix(in srgb, var(--level-b) 56%, white);
-}
-
-.task-details li.level-C {
-  background: color-mix(in srgb, var(--level-c) 56%, white);
-}
-
-.task-id {
-  font-weight: 700;
-  margin-bottom: 0.3rem;
 }
 
 .overlay {
@@ -403,27 +261,11 @@ body {
   display: none;
 }
 
-
-@media (max-width: 759px) {
-  .auth-card {
-    padding: 1.15rem;
-  }
-
-  .primary-btn {
-    position: sticky;
-    bottom: 0;
-  }
-}
-
 @media (min-width: 760px) {
   body {
     display: grid;
     place-items: center;
     padding: 1.5rem;
-  }
-
-  .auth-screen {
-    min-height: auto;
   }
 
   .app {
@@ -460,32 +302,6 @@ body {
     border-radius: 16px;
     font-size: 1.1rem;
   }
-}
-
-
-/* ===== Logout Button ===== */
-.topbar {
-  justify-content: space-between;
-}
-
-.logout-btn {
-  margin-left: auto;
-  padding: 0.4rem 1rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.logout-btn:hover {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fca5a5;
 }
 
 /* ===== Sidebar Task Form Fields ===== */
@@ -543,8 +359,25 @@ body {
   accent-color: var(--primary);
 }
 
-.sidebar-save-btn {
+.primary-btn {
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 0 0.9rem;
   margin-top: 0.3rem;
+  background: var(--primary);
+  color: #fff;
+  border-color: transparent;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.primary-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 45%, white);
+  outline-offset: 1px;
 }
 
 /* ===== Completed Task Cell ===== */
