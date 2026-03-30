@@ -1,42 +1,35 @@
-# 🗺️ Life Grid
+# Life Grid
 
-**A mobile-first 5×5 mission board with 25 numbered tasks.**
+Life Grid is a mobile-first web app that presents 25 personal missions in a 5×5 board. Each mission has a level, title, description, and completion state so users can track progress in a simple visual layout.
 
-## ✨ Overview
+## Who this is for
 
-Life Grid is a lightweight web experience designed for mobile users. The home screen shows a **5×5 grid** with tasks numbered **1 to 25**. Tap the hamburger icon at the top-left to open a sidebar and read each task's detailed description.
+- People who want a lightweight mission checklist without installing an app.
+- Users who prefer to review tasks by priority level (S, A, B, C, N).
+- Anyone who wants a fast, single-page interface that works on phones.
 
-## 🚀 Features
+## What users can do
 
-- 📱 **Mobile-first layout** optimized for phone screens
-- 🔢 **5×5 mission grid** with tasks 1–25
-- ☰ **Hamburger menu** in the top-left corner
-- 📋 **Sidebar task details** for all missions
-- 🌐 **English README + Traditional Chinese translation** (`readme_zh.md`)
+- View all 25 tasks in a 5×5 grid.
+- See task level distribution at a glance (S×1, A×2, B×4, C×8, N×10).
+- Open the left sidebar from the menu button.
+- Expand each task and edit its title and description.
+- Mark tasks as completed with a checkbox.
+- See a completion date stamp on completed task cells.
 
-## 🔐 Authentication
+## Interface overview
 
-- Login flow has been **temporarily removed**.
-- Users now enter the main Life Grid directly without signing in.
-- This project is preparing to migrate auth/data features to **Firebase** in a later update.
+- Top bar: app title and menu button.
+- Main grid: colored task cells labeled by level and index (for example, `S1`, `A1`, `N10`).
+- Sidebar: full task list with editable fields and completion controls.
 
-## 🌍 GitHub Pages Deployment
+## Tech stack
 
-This repo includes a workflow at `.github/workflows/deploy-pages.yml` that deploys the static files to GitHub Pages on every push to `main`.
+- HTML
+- CSS
+- JavaScript (vanilla)
 
-1. Go to **Settings → Pages**.
-2. Set **Build and deployment → Source** to **GitHub Actions**.
-3. Push to `main`, then wait for the **Deploy static site to GitHub Pages** workflow to finish.
-
-> If your site previously showed a broken page, switching Pages source to **GitHub Actions** usually fixes it.
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Frontend | HTML / CSS / JavaScript |
-
-## 📦 Getting Started
+## Run locally
 
 ```bash
 git clone https://github.com/cwhash/life-grid.git
@@ -44,4 +37,16 @@ cd life-grid
 python -m http.server 8000
 ```
 
-Open `http://localhost:8000` in your browser.
+Then open `http://localhost:8000` in your browser.
+
+## File guide
+
+- `index.html`: page structure and core UI containers.
+- `styles.css`: visual theme, layout, and responsive styles.
+- `script.js`: task generation, rendering, and interactions.
+- `README_zh.md`: Traditional Chinese version of this README.
+
+## Notes
+
+- Login/authentication is currently not part of this version.
+- Data is kept in memory during runtime and is reset on refresh.
