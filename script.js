@@ -18,7 +18,7 @@ const LEVEL_POSITIONS = {
 };
 
 // ===================== DOM 元素 =====================
-const REQUIRED_ELEMENT_IDS = ['taskGrid', 'sidebar', 'menuButton', 'closeButton', 'overlay', 'taskDetails'];
+const REQUIRED_ELEMENT_IDS = ['taskGrid', 'sidebar', 'menuButton', 'closeButton', 'overlay', 'taskDetails', 'deadlineCountdown'];
 
 const dom = {};
 const missingIds = [];
@@ -39,6 +39,7 @@ const menuButton = dom.menuButton;
 const closeButton = dom.closeButton;
 const overlay = dom.overlay;
 const taskDetails = dom.taskDetails;
+const deadlineCountdown = dom.deadlineCountdown;
 
 // ===================== 任務生成 =====================
 function getLevelByCell(cellNumber) {
@@ -198,6 +199,36 @@ function formatStampDate(date) {
   return `${year}.${month}.${day}`;
 }
 
+// ===================== Deadline Countdown =====================
+const DEADLINE_DATE = new Date('2028-01-01T00:00:00');
+
+function formatUnit(value, singular, plural) {
+  return `${value} ${value === 1 ? singular : plural}`;
+}
+
+function updateDeadlineCountdown() {
+  if (!deadlineCountdown) return;
+
+  const diffMs = DEADLINE_DATE.getTime() - Date.now();
+
+  if (diffMs <= 0) {
+    deadlineCountdown.textContent = 'Deadline reached: 0 days 0 hours 0 mins 0 secs';
+    return;
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  deadlineCountdown.textContent =
+    `Deadline: ${formatUnit(days, 'day', 'days')} ` +
+    `${formatUnit(hours, 'hour', 'hours')} ` +
+    `${formatUnit(mins, 'min', 'mins')} ` +
+    `${formatUnit(secs, 'sec', 'secs')}`;
+}
+
 // ===================== Sidebar =====================
 function openSidebar() {
   sidebar.classList.add('open');
@@ -224,4 +255,6 @@ document.addEventListener('keydown', (e) => {
 if (missingIds.length === 0) {
   renderGrid();
   renderTaskDetails();
+  updateDeadlineCountdown();
+  setInterval(updateDeadlineCountdown, 1000);
 }
