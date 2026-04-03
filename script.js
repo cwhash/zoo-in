@@ -212,7 +212,7 @@ function updateDeadlineCountdown() {
   const diffMs = DEADLINE_DATE.getTime() - Date.now();
 
   if (diffMs <= 0) {
-    deadlineCountdown.textContent = 'Deadline reached: 0 days 0 hours 0 mins 0 secs';
+    deadlineCountdown.textContent = '0 days 0 hours 0 mins 0 secs';
     return;
   }
 
@@ -223,7 +223,7 @@ function updateDeadlineCountdown() {
   const secs = totalSeconds % 60;
 
   deadlineCountdown.textContent =
-    `Deadline: ${formatUnit(days, 'day', 'days')} ` +
+    `${formatUnit(days, 'day', 'days')} ` +
     `${formatUnit(hours, 'hour', 'hours')} ` +
     `${formatUnit(mins, 'min', 'mins')} ` +
     `${formatUnit(secs, 'sec', 'secs')}`;
