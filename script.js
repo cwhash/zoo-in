@@ -106,7 +106,6 @@ function loadTasksFromDB(uid) {
         }
       });
     } else {
-      // 首次登入，將預設任務寫入 DB
       tasks.forEach((task) => saveTaskToDB(task));
     }
     renderGrid();
@@ -123,7 +122,6 @@ const googleSignInBtn = document.getElementById('googleSignInBtn');
 const userInfo = document.getElementById('userInfo');
 const userAvatar = document.getElementById('userAvatar');
 const signOutBtn = document.getElementById('signOutBtn');
-const loginError = document.getElementById('loginError');
 
 auth.onAuthStateChanged((user) => {
   if (user) {
@@ -133,7 +131,6 @@ auth.onAuthStateChanged((user) => {
     userInfo.style.display = 'flex';
     userAvatar.src = user.photoURL || '';
     userAvatar.alt = user.displayName || '';
-    setLoginError('');
     tasks = buildTasks();
     loadTasksFromDB(user.uid);
   } else {
@@ -144,39 +141,11 @@ auth.onAuthStateChanged((user) => {
   }
 });
 
-function getFriendlyLoginError(error) {
-  const messageMap = {
-    'auth/unauthorized-domain': '目前網址不在 Firebase 授權網域，請將此網域加入 Authorized domains。',
-    'auth/operation-not-allowed': 'Firebase 尚未啟用 Google 登入，請到 Firebase Console 開啟 Google Provider。',
-    'auth/popup-blocked': '瀏覽器擋住了登入視窗，請允許彈出視窗後再試一次。',
-    'auth/popup-closed-by-user': '登入視窗已被關閉，請重新嘗試登入。',
-    'auth/cancelled-popup-request': '登入流程被中斷，請稍後再試。',
-    'auth/invalid-action-code': '登入連結已失效（The requested action is invalid），請重新發起 Google 登入。',
-    'auth/invalid-continue-uri': '登入網址設定有誤（continue URI），請檢查 Firebase Auth 設定。',
-  };
-  if (error?.code && messageMap[error.code]) return messageMap[error.code];
-  return `登入失敗：${error?.message || '未知錯誤，請稍後再試。'}`;
-}
-
-function setLoginError(message = '') {
-  if (!loginError) return;
-  loginError.textContent = message;
-}
-
-async function startGoogleSignIn() {
+googleSignInBtn?.addEventListener('click', () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  setLoginError('');
-
-  try {
-    await auth.signInWithPopup(provider);
-  } catch (error) {
-    setLoginError(getFriendlyLoginError(error));
-    console.error('Google popup sign-in failed:', error);
-  }
-}
-
-googleSignInBtn?.addEventListener('click', startGoogleSignIn);
+  auth.signInWithPopup(provider);
+});
 
 signOutBtn?.addEventListener('click', () => auth.signOut());
 
