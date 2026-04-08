@@ -29,6 +29,19 @@ Life Grid is a mobile-first web app that presents 25 personal missions in a 5×5
 - CSS
 - JavaScript (vanilla)
 
+
+## Firebase configuration
+
+For security, `firebase-config.js` in this repository uses a placeholder API key.
+
+Before local development, update this file locally with your Firebase Web API key:
+
+```js
+apiKey: "<your-firebase-web-api-key>"
+```
+
+Do not commit real credentials. If a key was exposed before, rotate/revoke it in Google Cloud Console and update any allowed domain/referrer restrictions.
+
 ## Run locally
 
 ```bash

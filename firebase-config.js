@@ -1,6 +1,9 @@
 // ===================== Firebase 設定 =====================
+// IMPORTANT:
+// 1) Do NOT commit real keys to Git.
+// 2) Fill this file locally before running the app.
 const firebaseConfig = {
-  apiKey: "AIzaSyAx23HJiMP6FKz-jstMsjQ2YFkcrDaT2DM",
+  apiKey: "REPLACE_WITH_YOUR_FIREBASE_WEB_API_KEY",
   authDomain: "life-grid-446c4.firebaseapp.com",
   databaseURL: "https://life-grid-446c4-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "life-grid-446c4",
