@@ -55,5 +55,13 @@ python -m http.server 8000
 
 ## 備註
 
-- 此版本目前不包含登入／驗證功能。
-- 資料在執行期間儲存在記憶體中，重新整理頁面後會重置。
+- 目前已透過 Firebase Authentication 啟用 Google 登入。
+- 任務資料會儲存在 Firebase Realtime Database，並依使用者帳號隔離。
+
+## 登入疑難排解
+
+若登入時出現 **"The requested action is invalid."**，請先檢查以下 Firebase 設定：
+
+1. **Authentication → Sign-in method**：確認已啟用 **Google**。
+2. **Authentication → Settings → Authorized domains**：確認包含目前使用網域（本機測試請加入 `localhost`）。
+3. 若瀏覽器封鎖彈出視窗，請先允許此網站開啟彈出視窗後再重試。

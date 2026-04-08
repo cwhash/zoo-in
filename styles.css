@@ -523,6 +523,13 @@ main {
   box-shadow: 0 4px 16px rgba(34,53,102,0.18);
 }
 
+.login-error {
+  min-height: 1.2rem;
+  margin: 0.8rem 0 0;
+  font-size: 0.8rem;
+  color: #b42318;
+}
+
 /* ===== User Info (topbar) ===== */
 .user-avatar {
   width: 32px;

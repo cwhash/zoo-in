@@ -55,5 +55,13 @@ Then open `http://localhost:8000` in your browser.
 
 ## Notes
 
-- Login/authentication is currently not part of this version.
-- Data is kept in memory during runtime and is reset on refresh.
+- Google sign-in is enabled via Firebase Authentication.
+- Task data is stored in Firebase Realtime Database and is scoped per user.
+
+## Login troubleshooting
+
+If sign-in shows **"The requested action is invalid."**, check these Firebase settings first:
+
+1. **Authentication → Sign-in method**: ensure **Google** is enabled.
+2. **Authentication → Settings → Authorized domains**: include your current domain (for local testing, include `localhost`).
+3. If popup sign-in is blocked by the browser, allow popups for this site and try again.
