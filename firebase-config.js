@@ -1,15 +1,12 @@
 // ===================== Firebase 設定 =====================
-// 請到 Firebase Console > 專案設定 > 你的應用程式 > 複製以下資訊填入
-// https://console.firebase.google.com/
-
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAx23HJiMP6FKz-jstMsjQ2YFkcrDaT2DM",
+  authDomain: "life-grid-446c4.firebaseapp.com",
+  databaseURL: "https://life-grid-446c4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "life-grid-446c4",
+  storageBucket: "life-grid-446c4.firebasestorage.app",
+  messagingSenderId: "905154276293",
+  appId: "1:905154276293:web:c603cbac014d5305c379ac"
 };
 
 // 初始化 Firebase
