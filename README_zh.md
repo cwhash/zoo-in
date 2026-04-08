@@ -29,6 +29,19 @@ Life Grid 是一個以手機優先設計的網頁應用程式，將 25 個個人
 - CSS
 - JavaScript（原生）
 
+
+## Firebase 設定
+
+為了安全性，專案中的 `firebase-config.js` 已改為 API Key 佔位字串。
+
+在本機開發前，請先把檔案中的欄位改成你自己的 Firebase Web API Key：
+
+```js
+apiKey: "<your-firebase-web-api-key>"
+```
+
+請勿把真實憑證提交到 Git。若金鑰曾外洩，請到 Google Cloud Console 立即輪替／撤銷，並更新可用的網域或 referrer 限制。
+
 ## 本機執行
 
 ```bash
