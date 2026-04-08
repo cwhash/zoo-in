@@ -49,217 +49,125 @@ function getLevelByCell(cellNumber) {
   return 'N';
 }
 
-function buildTasks() {
-  const levelCounters = { S: 0, A: 0, B: 0, C: 0, N: 0 };
-  const nextTasks = [];
-  for (let cellNumber = 1; cellNumber <= GRID_SIZE * GRID_SIZE; cellNumber += 1) {
-    const row = Math.floor((cellNumber - 1) / GRID_SIZE);
-    const col = (cellNumber - 1) % GRID_SIZE;
-    const level = getLevelByCell(cellNumber);
-    levelCounters[level] += 1;
-    const count = levelCounters[level];
-    nextTasks.push({
-      code: `${level}${count}`,
-      row,
-      col,
+function generateTasks() {
+  const tasks = [];
+  const levelCount = {};
+  LEVEL_ORDER.forEach((l) => (levelCount[l] = 0));
+
+  for (let i = 1; i <= GRID_SIZE * GRID_SIZE; i++) {
+    const level = getLevelByCell(i);
+    levelCount[level]++;
+    tasks.push({
+      id: i,
       level,
-      title: `${level}${count} 任務`,
-      description: `${level} 級任務（${levelLabel[level]}）`,
-      completed: false,
-      completedAt: '',
+      index: levelCount[level],
+      title: '',
+      done: false,
     });
   }
-  return nextTasks;
+  return tasks;
 }
 
-let tasks = buildTasks();
-let currentUid = null;
+// ===================== 資料庫 =====================
+let currentUser = null;
+let tasks = generateTasks();
 
-// ===================== Firebase DB =====================
-function saveTaskToDB(task) {
-  if (!currentUid) return;
-  db.ref(`users/${currentUid}/tasks/${task.code}`).update({
-    title: task.title,
-    description: task.description,
-    completed: task.completed,
-    completedAt: task.completedAt,
-  });
+function getDbRef(uid) {
+  return db.ref('users/' + uid + '/tasks');
 }
 
-const debounceSave = {};
-function saveTaskDebounced(task) {
-  if (!currentUid) return;
-  if (debounceSave[task.code]) clearTimeout(debounceSave[task.code]);
-  debounceSave[task.code] = setTimeout(() => saveTaskToDB(task), 600);
+function saveTasksToDb() {
+  if (!currentUser) return;
+  getDbRef(currentUser.uid).set(tasks);
 }
 
-function loadTasksFromDB(uid) {
-  db.ref(`users/${uid}/tasks`).once('value').then((snapshot) => {
+function loadTasksFromDb(uid) {
+  getDbRef(uid).once('value', (snapshot) => {
     const data = snapshot.val();
-    if (data) {
-      tasks.forEach((task) => {
-        if (data[task.code]) {
-          task.title = data[task.code].title ?? task.title;
-          task.description = data[task.code].description ?? task.description;
-          task.completed = data[task.code].completed ?? false;
-          task.completedAt = data[task.code].completedAt ?? '';
-        }
-      });
+    if (data && Array.isArray(data)) {
+      tasks = data;
     } else {
-      tasks.forEach((task) => saveTaskToDB(task));
+      tasks = generateTasks();
     }
     renderGrid();
-    renderTaskDetails();
-    updateDeadlineCountdown();
-    setInterval(updateDeadlineCountdown, 1000);
   });
 }
 
-// ===================== Auth =====================
-const loginScreen = document.getElementById('loginScreen');
-const appDiv = document.getElementById('app');
-const googleSignInBtn = document.getElementById('googleSignInBtn');
-const userInfo = document.getElementById('userInfo');
-const userAvatar = document.getElementById('userAvatar');
-const signOutBtn = document.getElementById('signOutBtn');
-
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    currentUid = user.uid;
-    loginScreen.classList.add('hidden');
-    appDiv.style.display = '';
-    userInfo.style.display = 'flex';
-    userAvatar.src = user.photoURL || '';
-    userAvatar.alt = user.displayName || '';
-    tasks = buildTasks();
-    loadTasksFromDB(user.uid);
-  } else {
-    currentUid = null;
-    loginScreen.classList.remove('hidden');
-    appDiv.style.display = 'none';
-    userInfo.style.display = 'none';
-  }
-});
-
-googleSignInBtn?.addEventListener('click', () => {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-  auth.signInWithPopup(provider);
-});
-
-signOutBtn?.addEventListener('click', () => auth.signOut());
-
-// ===================== Render Grid =====================
-function focusTaskDetail(index) {
-  const detailItem = taskDetails.querySelector(`[data-task-index="${index}"]`);
-  if (!detailItem) return;
-  const details = detailItem.querySelector('details');
-  if (details) details.open = true;
-  detailItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
+// ===================== 渲染格子 =====================
 function renderGrid() {
+  if (!gridElement) return;
   gridElement.innerHTML = '';
-  const fragment = document.createDocumentFragment();
-  tasks.forEach((task, index) => {
-    const cell = document.createElement('button');
-    cell.type = 'button';
-    cell.className = `task-cell level-${task.level}${task.completed ? ' completed' : ''}`;
-    if (task.completedAt) {
-      cell.dataset.stampDate = task.completedAt;
-    }
-    cell.style.setProperty('--i', index + 1);
-    cell.textContent = task.code;
-    cell.setAttribute('aria-label', `${task.code}，${task.title}`);
-    cell.addEventListener('click', () => {
-      openSidebar();
-      focusTaskDetail(index);
-    });
-    fragment.appendChild(cell);
+
+  tasks.forEach((task) => {
+    const cell = document.createElement('div');
+    cell.className = `task-cell level-${task.level}${task.done ? ' done' : ''}`;
+    cell.dataset.id = task.id;
+    cell.textContent = task.title || `${task.level} × ${task.index}`;
+    cell.addEventListener('click', () => openSidebar(task.id));
+    gridElement.appendChild(cell);
   });
-  gridElement.appendChild(fragment);
 }
 
-function renderTaskDetails() {
+// ===================== Sidebar =====================
+function openSidebar(taskId) {
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task) return;
+
   taskDetails.innerHTML = '';
-  const fragment = document.createDocumentFragment();
-  tasks
-    .slice()
-    .sort((a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level) || Number(a.code.slice(1)) - Number(b.code.slice(1)))
-    .forEach((task) => {
-      const taskIndex = tasks.indexOf(task);
-      const item = document.createElement('li');
-      item.className = 'task-detail-item';
-      item.dataset.taskIndex = String(taskIndex);
 
-      const detail = document.createElement('details');
-      detail.className = 'task-detail-expand';
+  // Title
+  const titleLabel = document.createElement('li');
+  titleLabel.innerHTML = `<strong>標題</strong>`;
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.value = task.title;
+  titleInput.placeholder = '輸入任務標題';
+  titleInput.style.cssText = 'width:100%;padding:6px;margin-top:4px;border-radius:6px;border:1px solid #444;background:#2a2a2a;color:#fff;';
+  titleInput.addEventListener('input', (e) => {
+    task.title = e.target.value;
+    saveTasksToDb();
+    renderGrid();
+  });
+  titleLabel.appendChild(titleInput);
+  taskDetails.appendChild(titleLabel);
 
-      const summary = document.createElement('summary');
-      summary.className = 'task-detail-head';
+  // Done toggle
+  const doneLabel = document.createElement('li');
+  doneLabel.style.marginTop = '12px';
+  const doneCheckbox = document.createElement('input');
+  doneCheckbox.type = 'checkbox';
+  doneCheckbox.checked = task.done;
+  doneCheckbox.id = 'doneCheck';
+  doneCheckbox.addEventListener('change', (e) => {
+    task.done = e.target.checked;
+    saveTasksToDb();
+    renderGrid();
+  });
+  const doneCheckLabel = document.createElement('label');
+  doneCheckLabel.htmlFor = 'doneCheck';
+  doneCheckLabel.textContent = ' 已完成';
+  doneCheckLabel.style.marginLeft = '6px';
+  doneLabel.appendChild(doneCheckbox);
+  doneLabel.appendChild(doneCheckLabel);
+  taskDetails.appendChild(doneLabel);
 
-      const code = document.createElement('span');
-      code.className = `task-code level-${task.level}`;
-      code.textContent = task.code;
+  // Level info
+  const infoLi = document.createElement('li');
+  infoLi.style.marginTop = '12px';
+  infoLi.innerHTML = `<strong>等級：</strong>${task.level} (${levelLabel[task.level]})`;
+  taskDetails.appendChild(infoLi);
 
-      const statusLabel = document.createElement('label');
-      statusLabel.className = 'task-detail-check';
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = task.completed;
-      checkbox.addEventListener('change', () => {
-        task.completed = checkbox.checked;
-        task.completedAt = checkbox.checked ? formatStampDate(new Date()) : '';
-        saveTaskToDB(task);
-        renderGrid();
-      });
-      statusLabel.append(checkbox, document.createTextNode('完成'));
-
-      summary.append(code, statusLabel);
-
-      const body = document.createElement('div');
-      body.className = 'task-detail-body';
-
-      const titleLabel = document.createElement('label');
-      titleLabel.className = 'task-field-label';
-      titleLabel.textContent = '標題';
-      const titleInput = document.createElement('input');
-      titleInput.className = 'task-input';
-      titleInput.type = 'text';
-      titleInput.value = task.title;
-      titleInput.addEventListener('input', () => {
-        task.title = titleInput.value.trim() || `${task.code} 任務`;
-        saveTaskDebounced(task);
-        renderGrid();
-      });
-      titleLabel.appendChild(titleInput);
-
-      const descriptionLabel = document.createElement('label');
-      descriptionLabel.className = 'task-field-label';
-      descriptionLabel.textContent = '內容';
-      const descriptionInput = document.createElement('textarea');
-      descriptionInput.className = 'task-textarea';
-      descriptionInput.rows = 3;
-      descriptionInput.value = task.description;
-      descriptionInput.addEventListener('input', () => {
-        task.description = descriptionInput.value.trim() || `${task.level} 級任務（${levelLabel[task.level]}）`;
-        saveTaskDebounced(task);
-      });
-      descriptionLabel.appendChild(descriptionInput);
-
-      body.append(titleLabel, descriptionLabel);
-      detail.append(summary, body);
-      item.append(detail);
-      fragment.appendChild(item);
-    });
-  taskDetails.appendChild(fragment);
+  sidebar.classList.add('open');
+  sidebar.setAttribute('aria-hidden', 'false');
+  menuButton.setAttribute('aria-expanded', 'true');
+  overlay.classList.remove('hidden');
 }
 
-function formatStampDate(date) {
-  const year = String(date.getFullYear()).slice(-2);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}.${month}.${day}`;
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  sidebar.setAttribute('aria-hidden', 'true');
+  menuButton.setAttribute('aria-expanded', 'false');
+  overlay.classList.add('hidden');
 }
 
 // ===================== Deadline Countdown =====================
@@ -288,23 +196,66 @@ function updateDeadlineCountdown() {
     `${formatUnit(secs, 'sec', 'secs')}`;
 }
 
-// ===================== Sidebar =====================
-function openSidebar() {
-  sidebar.classList.add('open');
-  sidebar.setAttribute('aria-hidden', 'false');
-  menuButton.setAttribute('aria-expanded', 'true');
-  overlay.classList.remove('hidden');
+setInterval(updateDeadlineCountdown, 1000);
+updateDeadlineCountdown();
+
+// ===================== Firebase 驗證 =====================
+const loginScreen = document.getElementById('loginScreen');
+const appDiv = document.getElementById('app');
+const googleSignInBtn = document.getElementById('googleSignInBtn');
+const signOutBtn = document.getElementById('signOutBtn');
+const userInfo = document.getElementById('userInfo');
+const userAvatar = document.getElementById('userAvatar');
+
+function showApp(user) {
+  currentUser = user;
+  if (loginScreen) loginScreen.classList.add('hidden');
+  if (appDiv) appDiv.style.display = '';
+  if (userInfo) userInfo.style.display = 'flex';
+  if (userAvatar) {
+    userAvatar.src = user.photoURL || '';
+    userAvatar.alt = user.displayName || '';
+  }
+  loadTasksFromDb(user.uid);
 }
 
-function closeSidebar() {
-  sidebar.classList.remove('open');
-  sidebar.setAttribute('aria-hidden', 'true');
-  menuButton.setAttribute('aria-expanded', 'false');
-  overlay.classList.add('hidden');
+function showLogin() {
+  currentUser = null;
+  if (loginScreen) loginScreen.classList.remove('hidden');
+  if (appDiv) appDiv.style.display = 'none';
+  if (userInfo) userInfo.style.display = 'none';
+}
+
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    showApp(user);
+  } else {
+    showLogin();
+  }
+});
+
+if (googleSignInBtn) {
+  googleSignInBtn.addEventListener('click', () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch((err) => {
+      console.error('登入失敗', err);
+      alert('登入失敗：' + err.message);
+    });
+  });
+}
+
+if (signOutBtn) {
+  signOutBtn.addEventListener('click', () => {
+    auth.signOut();
+  });
 }
 
 // ===================== 事件 =====================
-menuButton?.addEventListener('click', openSidebar);
+menuButton?.addEventListener('click', () => {
+  if (sidebar.classList.contains('open')) {
+    closeSidebar();
+  }
+});
 closeButton?.addEventListener('click', closeSidebar);
 overlay?.addEventListener('click', closeSidebar);
 document.addEventListener('keydown', (e) => {
