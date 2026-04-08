@@ -52,14 +52,12 @@ function getLevelByCell(cellNumber) {
 function buildTasks() {
   const levelCounters = { S: 0, A: 0, B: 0, C: 0, N: 0 };
   const nextTasks = [];
-
   for (let cellNumber = 1; cellNumber <= GRID_SIZE * GRID_SIZE; cellNumber += 1) {
     const row = Math.floor((cellNumber - 1) / GRID_SIZE);
     const col = (cellNumber - 1) % GRID_SIZE;
     const level = getLevelByCell(cellNumber);
     levelCounters[level] += 1;
     const count = levelCounters[level];
-
     nextTasks.push({
       code: `${level}${count}`,
       row,
@@ -71,33 +69,99 @@ function buildTasks() {
       completedAt: '',
     });
   }
-
-  const generatedQuota = Object.fromEntries(Object.entries(levelCounters));
-  const quotaMismatch = LEVEL_ORDER.find((level) => generatedQuota[level] !== LEVEL_QUOTA[level]);
-  if (quotaMismatch) {
-    console.warn('任務配額與設定不一致：', { expected: LEVEL_QUOTA, actual: generatedQuota });
-  }
-
   return nextTasks;
 }
 
-const tasks = buildTasks();
+let tasks = buildTasks();
+let currentUid = null;
+
+// ===================== Firebase DB =====================
+function saveTaskToDB(task) {
+  if (!currentUid) return;
+  db.ref(`users/${currentUid}/tasks/${task.code}`).update({
+    title: task.title,
+    description: task.description,
+    completed: task.completed,
+    completedAt: task.completedAt,
+  });
+}
+
+const debounceSave = {};
+function saveTaskDebounced(task) {
+  if (!currentUid) return;
+  if (debounceSave[task.code]) clearTimeout(debounceSave[task.code]);
+  debounceSave[task.code] = setTimeout(() => saveTaskToDB(task), 600);
+}
+
+function loadTasksFromDB(uid) {
+  db.ref(`users/${uid}/tasks`).once('value').then((snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      tasks.forEach((task) => {
+        if (data[task.code]) {
+          task.title = data[task.code].title ?? task.title;
+          task.description = data[task.code].description ?? task.description;
+          task.completed = data[task.code].completed ?? false;
+          task.completedAt = data[task.code].completedAt ?? '';
+        }
+      });
+    } else {
+      // 首次登入，將預設任務寫入 DB
+      tasks.forEach((task) => saveTaskToDB(task));
+    }
+    renderGrid();
+    renderTaskDetails();
+    updateDeadlineCountdown();
+    setInterval(updateDeadlineCountdown, 1000);
+  });
+}
+
+// ===================== Auth =====================
+const loginScreen = document.getElementById('loginScreen');
+const appDiv = document.getElementById('app');
+const googleSignInBtn = document.getElementById('googleSignInBtn');
+const userInfo = document.getElementById('userInfo');
+const userAvatar = document.getElementById('userAvatar');
+const signOutBtn = document.getElementById('signOutBtn');
+
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    currentUid = user.uid;
+    loginScreen.classList.add('hidden');
+    appDiv.style.display = '';
+    userInfo.style.display = 'flex';
+    userAvatar.src = user.photoURL || '';
+    userAvatar.alt = user.displayName || '';
+    tasks = buildTasks();
+    loadTasksFromDB(user.uid);
+  } else {
+    currentUid = null;
+    loginScreen.classList.remove('hidden');
+    appDiv.style.display = 'none';
+    userInfo.style.display = 'none';
+  }
+});
+
+googleSignInBtn?.addEventListener('click', () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  auth.signInWithPopup(provider);
+});
+
+signOutBtn?.addEventListener('click', () => auth.signOut());
 
 // ===================== Render Grid =====================
 function focusTaskDetail(index) {
   const detailItem = taskDetails.querySelector(`[data-task-index="${index}"]`);
   if (!detailItem) return;
-
   const details = detailItem.querySelector('details');
   if (details) details.open = true;
-
   detailItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function renderGrid() {
   gridElement.innerHTML = '';
   const fragment = document.createDocumentFragment();
-
   tasks.forEach((task, index) => {
     const cell = document.createElement('button');
     cell.type = 'button';
@@ -114,14 +178,12 @@ function renderGrid() {
     });
     fragment.appendChild(cell);
   });
-
   gridElement.appendChild(fragment);
 }
 
 function renderTaskDetails() {
   taskDetails.innerHTML = '';
   const fragment = document.createDocumentFragment();
-
   tasks
     .slice()
     .sort((a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level) || Number(a.code.slice(1)) - Number(b.code.slice(1)))
@@ -149,6 +211,7 @@ function renderTaskDetails() {
       checkbox.addEventListener('change', () => {
         task.completed = checkbox.checked;
         task.completedAt = checkbox.checked ? formatStampDate(new Date()) : '';
+        saveTaskToDB(task);
         renderGrid();
       });
       statusLabel.append(checkbox, document.createTextNode('完成'));
@@ -167,6 +230,7 @@ function renderTaskDetails() {
       titleInput.value = task.title;
       titleInput.addEventListener('input', () => {
         task.title = titleInput.value.trim() || `${task.code} 任務`;
+        saveTaskDebounced(task);
         renderGrid();
       });
       titleLabel.appendChild(titleInput);
@@ -180,6 +244,7 @@ function renderTaskDetails() {
       descriptionInput.value = task.description;
       descriptionInput.addEventListener('input', () => {
         task.description = descriptionInput.value.trim() || `${task.level} 級任務（${levelLabel[task.level]}）`;
+        saveTaskDebounced(task);
       });
       descriptionLabel.appendChild(descriptionInput);
 
@@ -188,7 +253,6 @@ function renderTaskDetails() {
       item.append(detail);
       fragment.appendChild(item);
     });
-
   taskDetails.appendChild(fragment);
 }
 
@@ -208,20 +272,16 @@ function formatUnit(value, singular, plural) {
 
 function updateDeadlineCountdown() {
   if (!deadlineCountdown) return;
-
   const diffMs = DEADLINE_DATE.getTime() - Date.now();
-
   if (diffMs <= 0) {
     deadlineCountdown.textContent = '0 days 0 hours 0 mins 0 secs';
     return;
   }
-
   const totalSeconds = Math.floor(diffMs / 1000);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const mins = Math.floor((totalSeconds % 3600) / 60);
   const secs = totalSeconds % 60;
-
   deadlineCountdown.textContent =
     `${formatUnit(days, 'day', 'days')} ` +
     `${formatUnit(hours, 'hour', 'hours')} ` +
@@ -251,10 +311,3 @@ overlay?.addEventListener('click', closeSidebar);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && sidebar?.classList.contains('open')) closeSidebar();
 });
-
-if (missingIds.length === 0) {
-  renderGrid();
-  renderTaskDetails();
-  updateDeadlineCountdown();
-  setInterval(updateDeadlineCountdown, 1000);
-}
