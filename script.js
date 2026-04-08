@@ -100,9 +100,14 @@ function renderGrid() {
 
   tasks.forEach((task) => {
     const cell = document.createElement('div');
-    cell.className = `task-cell level-${task.level}${task.done ? ' done' : ''}`;
+    const doneClass = task.done ? ' completed' : '';
+    cell.className = `task-cell level-${task.level}${doneClass}`;
     cell.dataset.id = task.id;
-    cell.textContent = task.title || `${task.level} × ${task.index}`;
+    if (task.done) {
+      const today = new Date();
+      cell.dataset.stampDate = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+    }
+    cell.textContent = task.title || `${task.level}×${task.index}`;
     cell.addEventListener('click', () => openSidebar(task.id));
     gridElement.appendChild(cell);
   });
@@ -116,28 +121,30 @@ function openSidebar(taskId) {
   taskDetails.innerHTML = '';
 
   // Title
-  const titleLabel = document.createElement('li');
-  titleLabel.innerHTML = `<strong>標題</strong>`;
+  const titleLi = document.createElement('li');
+  titleLi.innerHTML = `<strong>標題</strong>`;
   const titleInput = document.createElement('input');
   titleInput.type = 'text';
   titleInput.value = task.title;
   titleInput.placeholder = '輸入任務標題';
-  titleInput.style.cssText = 'width:100%;padding:6px;margin-top:4px;border-radius:6px;border:1px solid #444;background:#2a2a2a;color:#fff;';
+  titleInput.style.cssText = 'width:100%;padding:6px;margin-top:4px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#1a2340;font-size:0.9rem;';
   titleInput.addEventListener('input', (e) => {
     task.title = e.target.value;
     saveTasksToDb();
     renderGrid();
   });
-  titleLabel.appendChild(titleInput);
-  taskDetails.appendChild(titleLabel);
+  titleLi.appendChild(titleInput);
+  taskDetails.appendChild(titleLi);
 
   // Done toggle
-  const doneLabel = document.createElement('li');
-  doneLabel.style.marginTop = '12px';
+  const doneLi = document.createElement('li');
+  doneLi.style.marginTop = '12px';
   const doneCheckbox = document.createElement('input');
   doneCheckbox.type = 'checkbox';
   doneCheckbox.checked = task.done;
   doneCheckbox.id = 'doneCheck';
+  doneCheckbox.style.width = '16px';
+  doneCheckbox.style.height = '16px';
   doneCheckbox.addEventListener('change', (e) => {
     task.done = e.target.checked;
     saveTasksToDb();
@@ -147,13 +154,15 @@ function openSidebar(taskId) {
   doneCheckLabel.htmlFor = 'doneCheck';
   doneCheckLabel.textContent = ' 已完成';
   doneCheckLabel.style.marginLeft = '6px';
-  doneLabel.appendChild(doneCheckbox);
-  doneLabel.appendChild(doneCheckLabel);
-  taskDetails.appendChild(doneLabel);
+  doneCheckLabel.style.fontSize = '0.9rem';
+  doneLi.appendChild(doneCheckbox);
+  doneLi.appendChild(doneCheckLabel);
+  taskDetails.appendChild(doneLi);
 
   // Level info
   const infoLi = document.createElement('li');
   infoLi.style.marginTop = '12px';
+  infoLi.style.fontSize = '0.9rem';
   infoLi.innerHTML = `<strong>等級：</strong>${task.level} (${levelLabel[task.level]})`;
   taskDetails.appendChild(infoLi);
 
