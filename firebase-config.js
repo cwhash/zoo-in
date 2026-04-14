@@ -1,6 +1,6 @@
 // ===================== Firebase 設定 =====================
 const firebaseConfig = {
-  apiKey: "AIzaSyAx23HJiMP6FKz-jstMsjQ2YFkcrDaT2DM",
+  apiKey: "__LIFEGRID_APIKEY__",
   authDomain: "life-grid-446c4.firebaseapp.com",
   databaseURL: "https://life-grid-446c4-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "life-grid-446c4",
