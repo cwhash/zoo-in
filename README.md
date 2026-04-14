@@ -1,7 +1,7 @@
 # Life Grid
 
 Life Grid is a mobile-first web app that presents 25 personal missions in a 5×5 board. Each mission has a level, title, description, and completion state so users can track progress in a simple visual layout.
-
+ 
 ## Who this is for
 
 - People who want a lightweight mission checklist without installing an app.
