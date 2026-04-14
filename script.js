@@ -9,6 +9,14 @@ const GRID_SEQUENCE = [
   'N6', 'B3', 'C7', 'B4', 'N7',
   'N8', 'N9', 'C8', 'N10', 'A2',
 ];
+const TASK_LIST_SEQUENCE = [
+  'S1',
+  'A1', 'A2',
+  'B1', 'B2', 'B3', 'B4',
+  'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8',
+  'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
+];
+const TASK_LIST_ORDER = new Map(TASK_LIST_SEQUENCE.map((code, idx) => [code, idx]));
 const levelLabel = {
   S: '金',
   A: '粉',
@@ -197,9 +205,9 @@ function openTaskListSidebar() {
   if (sidebarTitle) sidebarTitle.textContent = 'Task list';
 
   const sortedTasks = [...tasks].sort((a, b) => {
-    const levelDiff = LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level);
-    if (levelDiff !== 0) return levelDiff;
-    return a.index - b.index;
+    const aOrder = TASK_LIST_ORDER.get(a.code) ?? Number.MAX_SAFE_INTEGER;
+    const bOrder = TASK_LIST_ORDER.get(b.code) ?? Number.MAX_SAFE_INTEGER;
+    return aOrder - bOrder;
   });
 
   sortedTasks.forEach((task) => {
@@ -272,6 +280,7 @@ function showApp(user) {
     userAvatar.src = user.photoURL || '';
     userAvatar.alt = user.displayName || '';
   }
+  renderGrid();
   loadTasksFromDb(user.uid);
 }
 
@@ -319,3 +328,5 @@ overlay?.addEventListener('click', closeSidebar);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && sidebar?.classList.contains('open')) closeSidebar();
 });
+
+renderGrid();
