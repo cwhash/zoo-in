@@ -97,6 +97,8 @@ function generateTasks() {
 let currentUser = null;
 let tasks = generateTasks();
 let memberInfo = null;
+let memberInfoLoadVersion = 0;
+let tasksLoadVersion = 0;
 
 function isTaskLike(task) {
   return task && typeof task === 'object' && typeof task.task_id === 'string';
@@ -180,6 +182,10 @@ function closeUserMenu() {
   userMenuButton.setAttribute('aria-expanded', 'false');
 }
 
+function isUserMenuOpen() {
+  return Boolean(userMenuPanel && !userMenuPanel.classList.contains('hidden'));
+}
+
 function openUserMenu() {
   if (!userMenuPanel || !userMenuButton) return;
   renderMemberInfoPanel();
@@ -188,22 +194,40 @@ function openUserMenu() {
   userMenuButton.setAttribute('aria-expanded', 'true');
 }
 
-function saveMemberInfoToDb() {
-  if (!currentUser) return;
-  if (!memberInfo) memberInfo = getDefaultMemberInfo();
-  getMemberInfoRef(currentUser.uid).set(memberInfo);
+function toggleUserMenu() {
+  if (isUserMenuOpen()) {
+    closeUserMenu();
+    return;
+  }
+  openUserMenu();
 }
 
-function loadMemberInfoFromDb(uid) {
-  getMemberInfoRef(uid).once('value', (memberSnap) => {
-    if (memberSnap.exists()) {
-      memberInfo = normalizeMemberInfo(memberSnap.val());
-    } else {
-      memberInfo = getDefaultMemberInfo();
-      saveMemberInfoToDb();
-    }
+function saveMemberInfoToDb() {
+  if (!currentUser) return Promise.resolve(false);
+  if (!memberInfo) memberInfo = getDefaultMemberInfo();
+  return getMemberInfoRef(currentUser.uid).set(memberInfo);
+}
+
+async function loadMemberInfoFromDb(uid) {
+  const loadVersion = ++memberInfoLoadVersion;
+  const memberRef = getMemberInfoRef(uid);
+
+  try {
+    const memberSnap = await memberRef.once('value');
+    if (!currentUser || currentUser.uid !== uid || loadVersion !== memberInfoLoadVersion) return;
+
+    const rawMemberInfo = memberSnap.val();
+    const normalizedMemberInfo = normalizeMemberInfo(rawMemberInfo);
+    memberInfo = normalizedMemberInfo;
     renderMemberInfoPanel();
-  });
+
+    const needWriteBack = !memberSnap.exists() || JSON.stringify(rawMemberInfo) !== JSON.stringify(normalizedMemberInfo);
+    if (needWriteBack) {
+      await memberRef.set(normalizedMemberInfo);
+    }
+  } catch (err) {
+    console.error('讀取 member_info 失敗', err);
+  }
 }
 
 function saveTasksToDb() {
@@ -211,17 +235,27 @@ function saveTasksToDb() {
   getTaskListRef(currentUser.uid).set(tasks);
 }
 
-function loadTasksFromDb(uid) {
-  getTaskListRef(uid).once('value', (snapshot) => {
-    const data = snapshot.val();
-    if (Array.isArray(data) && data.length > 0) {
-      tasks = normalizeTasks(data);
-    } else {
-      tasks = generateTasks();
-      saveTasksToDb();
-    }
+async function loadTasksFromDb(uid) {
+  const loadVersion = ++tasksLoadVersion;
+  const taskListRef = getTaskListRef(uid);
+
+  try {
+    const snapshot = await taskListRef.once('value');
+    if (!currentUser || currentUser.uid !== uid || loadVersion !== tasksLoadVersion) return;
+
+    const rawTasks = snapshot.val();
+    const hasTaskList = Array.isArray(rawTasks) && rawTasks.length > 0;
+    const normalizedTasks = hasTaskList ? normalizeTasks(rawTasks) : generateTasks();
+    tasks = normalizedTasks;
     renderGrid();
-  });
+
+    const needWriteBack = !hasTaskList || JSON.stringify(rawTasks) !== JSON.stringify(normalizedTasks);
+    if (needWriteBack) {
+      await taskListRef.set(normalizedTasks);
+    }
+  } catch (err) {
+    console.error('讀取 task_list 失敗', err);
+  }
 }
 
 // ===================== 渲染格子 =====================
@@ -438,22 +472,24 @@ if (signOutBtn) {
 
 if (userMenuButton) {
   userMenuButton.addEventListener('click', (e) => {
+    e.preventDefault();
     e.stopPropagation();
-    if (userMenuPanel?.classList.contains('hidden')) {
-      openUserMenu();
-    } else {
-      closeUserMenu();
-    }
+    toggleUserMenu();
   });
 }
 
 if (memberSaveBtn) {
-  memberSaveBtn.addEventListener('click', () => {
+  memberSaveBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!currentUser) return;
     if (!memberInfo) memberInfo = getDefaultMemberInfo();
     memberInfo.real_name = memberRealNameInput?.value || '';
     memberInfo.nick_name = memberNickNameInput?.value || '';
     memberInfo.address = memberAddressInput?.value || '';
-    saveMemberInfoToDb();
+    saveMemberInfoToDb().catch((err) => {
+      console.error('儲存 member_info 失敗', err);
+    });
   });
 }
 
