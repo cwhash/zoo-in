@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Replace API Key
+        run: sed -i 's/__LIFEGRID_APIKEY__/${{ secrets.LIFEGRID_APIKEY }}/g' firebase-config.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
