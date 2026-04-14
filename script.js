@@ -519,11 +519,12 @@ if (memberSaveBtn) {
     memberInfo.address = memberAddressInput?.value || '';
     try {
       await saveMemberInfoToDb();
+      setMemberEditMode(false);
       updateMemberSaveButtonLabel('已儲存');
       if (memberSaveFeedbackTimer) clearTimeout(memberSaveFeedbackTimer);
       memberSaveFeedbackTimer = setTimeout(() => {
         memberSaveFeedbackTimer = null;
-        setMemberEditMode(false);
+        updateMemberSaveButtonLabel('修改會員資料');
       }, 1000);
     } catch (err) {
       console.error('儲存 member_info 失敗', err);
