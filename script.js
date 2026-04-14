@@ -178,6 +178,7 @@ function renderMemberInfoPanel() {
 function closeUserMenu() {
   if (!userMenuPanel || !userMenuButton) return;
   userMenuPanel.classList.add('hidden');
+  userMenuPanel.hidden = true;
   userMenuPanel.setAttribute('aria-hidden', 'true');
   userMenuButton.setAttribute('aria-expanded', 'false');
 }
@@ -190,6 +191,7 @@ function openUserMenu() {
   if (!userMenuPanel || !userMenuButton) return;
   renderMemberInfoPanel();
   userMenuPanel.classList.remove('hidden');
+  userMenuPanel.hidden = false;
   userMenuPanel.setAttribute('aria-hidden', 'false');
   userMenuButton.setAttribute('aria-expanded', 'true');
 }
