@@ -73,6 +73,10 @@ function generateTasks() {
 let currentUser = null;
 let tasks = generateTasks();
 
+function isTaskLike(task) {
+  return task && typeof task === 'object' && typeof task.code === 'string';
+}
+
 function normalizeTasks(rawTasks) {
   const defaults = generateTasks();
   if (!Array.isArray(rawTasks)) return defaults;
@@ -90,6 +94,12 @@ function normalizeTasks(rawTasks) {
       done: Boolean(savedTask.done),
     };
   });
+}
+
+function ensureRenderableTasks() {
+  if (!Array.isArray(tasks) || tasks.length !== GRID_SEQUENCE.length || tasks.some((task) => !isTaskLike(task))) {
+    tasks = normalizeTasks(tasks);
+  }
 }
 
 function getDbRef(uid) {
@@ -116,12 +126,14 @@ function loadTasksFromDb(uid) {
 // ===================== 渲染格子 =====================
 function renderGrid() {
   if (!gridElement) return;
+  ensureRenderableTasks();
   gridElement.innerHTML = '';
 
-  tasks.forEach((task) => {
+  tasks.forEach((task, idx) => {
     const cell = document.createElement('div');
     const doneClass = task.done ? ' completed' : '';
     cell.className = `task-cell level-${task.level}${doneClass}`;
+    cell.style.setProperty('--i', String(idx));
     cell.dataset.id = task.id;
     if (task.done) {
       const today = new Date();
@@ -201,6 +213,7 @@ function openSidebar(taskId) {
 
 function openTaskListSidebar() {
   if (!taskDetails) return;
+  ensureRenderableTasks();
   taskDetails.innerHTML = '';
   if (sidebarTitle) sidebarTitle.textContent = 'Task list';
 
