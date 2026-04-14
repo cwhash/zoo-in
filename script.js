@@ -194,9 +194,15 @@ function openSidebar(taskId) {
 function openTaskListSidebar() {
   if (!taskDetails) return;
   taskDetails.innerHTML = '';
-  if (sidebarTitle) sidebarTitle.textContent = '全部任務清單';
+  if (sidebarTitle) sidebarTitle.textContent = 'Task list';
 
-  tasks.forEach((task) => {
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const levelDiff = LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level);
+    if (levelDiff !== 0) return levelDiff;
+    return a.index - b.index;
+  });
+
+  sortedTasks.forEach((task) => {
     const item = document.createElement('li');
     item.className = 'task-list-item';
     const taskTitle = task.title?.trim() || '未命名任務';
