@@ -37,11 +37,6 @@ const REQUIRED_ELEMENT_IDS = [
   'sidebarTitle',
   'userMenuButton',
   'userMenuPanel',
-  'memberReadonlyView',
-  'memberEditableView',
-  'memberRealNameText',
-  'memberNickNameText',
-  'memberAddressText',
   'memberRealNameInput',
   'memberNickNameInput',
   'memberAddressInput',
@@ -71,11 +66,6 @@ const deadlineCountdown = dom.deadlineCountdown;
 const sidebarTitle = dom.sidebarTitle;
 const userMenuButton = dom.userMenuButton;
 const userMenuPanel = dom.userMenuPanel;
-const memberReadonlyView = dom.memberReadonlyView;
-const memberEditableView = dom.memberEditableView;
-const memberRealNameText = dom.memberRealNameText;
-const memberNickNameText = dom.memberNickNameText;
-const memberAddressText = dom.memberAddressText;
 const memberRealNameInput = dom.memberRealNameInput;
 const memberNickNameInput = dom.memberNickNameInput;
 const memberAddressInput = dom.memberAddressInput;
@@ -182,15 +172,9 @@ function normalizeMemberInfo(rawMemberInfo) {
 
 function renderMemberInfoPanel() {
   if (!memberRealNameInput || !memberNickNameInput || !memberAddressInput) return;
-  const realName = memberInfo?.real_name || '';
-  const nickName = memberInfo?.nick_name || '';
-  const address = memberInfo?.address || '';
-  if (memberRealNameText) memberRealNameText.textContent = realName || '—';
-  if (memberNickNameText) memberNickNameText.textContent = nickName || '—';
-  if (memberAddressText) memberAddressText.textContent = address || '—';
-  memberRealNameInput.value = realName;
-  memberNickNameInput.value = nickName;
-  memberAddressInput.value = address;
+  memberRealNameInput.value = memberInfo?.real_name || '';
+  memberNickNameInput.value = memberInfo?.nick_name || '';
+  memberAddressInput.value = memberInfo?.address || '';
 }
 
 function setMemberInputsDisabled(disabled) {
@@ -206,8 +190,6 @@ function updateMemberSaveButtonLabel(label) {
 
 function setMemberEditMode(isEditing) {
   isEditingMemberInfo = isEditing;
-  memberReadonlyView?.classList.toggle('hidden', isEditing);
-  memberEditableView?.classList.toggle('hidden', !isEditing);
   setMemberInputsDisabled(!isEditing);
   updateMemberSaveButtonLabel(isEditing ? '儲存會員資料' : '修改會員資料');
 }
@@ -535,7 +517,6 @@ if (memberSaveBtn) {
     memberInfo.real_name = memberRealNameInput?.value || '';
     memberInfo.nick_name = memberNickNameInput?.value || '';
     memberInfo.address = memberAddressInput?.value || '';
-    renderMemberInfoPanel();
     try {
       await saveMemberInfoToDb();
       updateMemberSaveButtonLabel('已儲存');
