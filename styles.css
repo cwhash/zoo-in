@@ -358,6 +358,18 @@ main {
   background: #f9fbff;
 }
 
+.task-list-item {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: #f7f9ff;
+}
+
+.task-list-item small {
+  color: var(--muted);
+}
+
 .task-detail-expand {
   width: 100%;
 }

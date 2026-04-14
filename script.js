@@ -2,6 +2,33 @@
 const GRID_SIZE = 5;
 const LEVEL_ORDER = ['S', 'A', 'B', 'C', 'N'];
 const LEVEL_QUOTA = { S: 1, A: 2, B: 4, C: 8, N: 10 };
+const GRID_SEQUENCE = [
+  'S1',
+  'A1',
+  'A2',
+  'B1',
+  'B2',
+  'B3',
+  'B4',
+  'C1',
+  'C2',
+  'C3',
+  'C4',
+  'C5',
+  'C6',
+  'C7',
+  'C8',
+  'N1',
+  'N2',
+  'N3',
+  'N4',
+  'N5',
+  'N6',
+  'N7',
+  'N8',
+  'N9',
+  'N10',
+];
 const levelLabel = {
   S: '金',
   A: '粉',
@@ -10,15 +37,8 @@ const levelLabel = {
   N: '灰',
 };
 
-const LEVEL_POSITIONS = {
-  S: [13],
-  A: [1, 25],
-  B: [7, 9, 17, 19],
-  C: [3, 8, 11, 12, 14, 15, 18, 23],
-};
-
 // ===================== DOM 元素 =====================
-const REQUIRED_ELEMENT_IDS = ['taskGrid', 'sidebar', 'menuButton', 'closeButton', 'overlay', 'taskDetails', 'deadlineCountdown'];
+const REQUIRED_ELEMENT_IDS = ['taskGrid', 'sidebar', 'menuButton', 'closeButton', 'overlay', 'taskDetails', 'deadlineCountdown', 'sidebarTitle'];
 
 const dom = {};
 const missingIds = [];
@@ -40,27 +60,20 @@ const closeButton = dom.closeButton;
 const overlay = dom.overlay;
 const taskDetails = dom.taskDetails;
 const deadlineCountdown = dom.deadlineCountdown;
+const sidebarTitle = dom.sidebarTitle;
 
 // ===================== 任務生成 =====================
-function getLevelByCell(cellNumber) {
-  for (const [level, cells] of Object.entries(LEVEL_POSITIONS)) {
-    if (cells.includes(cellNumber)) return level;
-  }
-  return 'N';
-}
-
 function generateTasks() {
   const tasks = [];
-  const levelCount = {};
-  LEVEL_ORDER.forEach((l) => (levelCount[l] = 0));
-
-  for (let i = 1; i <= GRID_SIZE * GRID_SIZE; i++) {
-    const level = getLevelByCell(i);
-    levelCount[level]++;
+  for (let i = 1; i <= GRID_SEQUENCE.length; i++) {
+    const code = GRID_SEQUENCE[i - 1];
+    const level = code[0];
+    const index = Number(code.slice(1));
     tasks.push({
       id: i,
       level,
-      index: levelCount[level],
+      index,
+      code,
       title: '',
       done: false,
     });
@@ -71,6 +84,25 @@ function generateTasks() {
 // ===================== 資料庫 =====================
 let currentUser = null;
 let tasks = generateTasks();
+
+function normalizeTasks(rawTasks) {
+  const defaults = generateTasks();
+  if (!Array.isArray(rawTasks)) return defaults;
+
+  return defaults.map((defaultTask, idx) => {
+    const savedTask = rawTasks[idx] || {};
+    return {
+      ...defaultTask,
+      ...savedTask,
+      id: defaultTask.id,
+      level: defaultTask.level,
+      index: defaultTask.index,
+      code: defaultTask.code,
+      title: typeof savedTask.title === 'string' ? savedTask.title : '',
+      done: Boolean(savedTask.done),
+    };
+  });
+}
 
 function getDbRef(uid) {
   return db.ref('users/' + uid + '/tasks');
@@ -84,8 +116,8 @@ function saveTasksToDb() {
 function loadTasksFromDb(uid) {
   getDbRef(uid).once('value', (snapshot) => {
     const data = snapshot.val();
-    if (data && Array.isArray(data)) {
-      tasks = data;
+    if (Array.isArray(data)) {
+      tasks = normalizeTasks(data);
     } else {
       tasks = generateTasks();
     }
@@ -107,7 +139,7 @@ function renderGrid() {
       const today = new Date();
       cell.dataset.stampDate = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
     }
-    cell.textContent = task.title || `${task.level}×${task.index}`;
+    cell.textContent = task.code || `${task.level}${task.index}`;
     cell.addEventListener('click', () => openSidebar(task.id));
     gridElement.appendChild(cell);
   });
@@ -119,9 +151,16 @@ function openSidebar(taskId) {
   if (!task) return;
 
   taskDetails.innerHTML = '';
+  if (sidebarTitle) sidebarTitle.textContent = '任務詳情';
+
+  // Code
+  const codeLi = document.createElement('li');
+  codeLi.innerHTML = `<strong>編號：</strong>${task.code || `${task.level}${task.index}`}`;
+  taskDetails.appendChild(codeLi);
 
   // Title
   const titleLi = document.createElement('li');
+  titleLi.style.marginTop = '12px';
   titleLi.innerHTML = `<strong>標題</strong>`;
   const titleInput = document.createElement('input');
   titleInput.type = 'text';
@@ -165,6 +204,28 @@ function openSidebar(taskId) {
   infoLi.style.fontSize = '0.9rem';
   infoLi.innerHTML = `<strong>等級：</strong>${task.level} (${levelLabel[task.level]})`;
   taskDetails.appendChild(infoLi);
+
+  sidebar.classList.add('open');
+  sidebar.setAttribute('aria-hidden', 'false');
+  menuButton.setAttribute('aria-expanded', 'true');
+  overlay.classList.remove('hidden');
+}
+
+function openTaskListSidebar() {
+  if (!taskDetails) return;
+  taskDetails.innerHTML = '';
+  if (sidebarTitle) sidebarTitle.textContent = '全部任務清單';
+
+  tasks.forEach((task) => {
+    const item = document.createElement('li');
+    item.className = 'task-list-item';
+    const taskTitle = task.title?.trim() || '未命名任務';
+    item.innerHTML =
+      `<div><strong>${task.code || `${task.level}${task.index}`}</strong> - ${taskTitle}</div>` +
+      `<small>${task.done ? '已完成' : '未完成'}</small>`;
+    item.addEventListener('click', () => openSidebar(task.id));
+    taskDetails.appendChild(item);
+  });
 
   sidebar.classList.add('open');
   sidebar.setAttribute('aria-hidden', 'false');
@@ -263,7 +324,9 @@ if (signOutBtn) {
 menuButton?.addEventListener('click', () => {
   if (sidebar.classList.contains('open')) {
     closeSidebar();
+    return;
   }
+  openTaskListSidebar();
 });
 closeButton?.addEventListener('click', closeSidebar);
 overlay?.addEventListener('click', closeSidebar);
