@@ -99,6 +99,8 @@ let tasks = generateTasks();
 let memberInfo = null;
 let memberInfoLoadVersion = 0;
 let tasksLoadVersion = 0;
+let isEditingMemberInfo = false;
+let memberSaveFeedbackTimer = null;
 
 function isTaskLike(task) {
   return task && typeof task === 'object' && typeof task.task_id === 'string';
@@ -175,8 +177,30 @@ function renderMemberInfoPanel() {
   memberAddressInput.value = memberInfo?.address || '';
 }
 
+function setMemberInputsDisabled(disabled) {
+  memberRealNameInput?.toggleAttribute('disabled', disabled);
+  memberNickNameInput?.toggleAttribute('disabled', disabled);
+  memberAddressInput?.toggleAttribute('disabled', disabled);
+}
+
+function updateMemberSaveButtonLabel(label) {
+  if (!memberSaveBtn) return;
+  memberSaveBtn.textContent = label;
+}
+
+function setMemberEditMode(isEditing) {
+  isEditingMemberInfo = isEditing;
+  setMemberInputsDisabled(!isEditing);
+  updateMemberSaveButtonLabel(isEditing ? '儲存會員資料' : '修改會員資料');
+}
+
 function closeUserMenu() {
   if (!userMenuPanel || !userMenuButton) return;
+  if (memberSaveFeedbackTimer) {
+    clearTimeout(memberSaveFeedbackTimer);
+    memberSaveFeedbackTimer = null;
+  }
+  setMemberEditMode(false);
   userMenuPanel.classList.add('hidden');
   userMenuPanel.hidden = true;
   userMenuPanel.setAttribute('aria-hidden', 'true');
@@ -189,6 +213,7 @@ function isUserMenuOpen() {
 
 function openUserMenu() {
   if (!userMenuPanel || !userMenuButton) return;
+  setMemberEditMode(false);
   renderMemberInfoPanel();
   userMenuPanel.classList.remove('hidden');
   userMenuPanel.hidden = false;
@@ -480,17 +505,29 @@ if (userMenuButton) {
 }
 
 if (memberSaveBtn) {
-  memberSaveBtn.addEventListener('click', (e) => {
+  memberSaveBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!currentUser) return;
+    if (!isEditingMemberInfo) {
+      setMemberEditMode(true);
+      return;
+    }
     if (!memberInfo) memberInfo = getDefaultMemberInfo();
     memberInfo.real_name = memberRealNameInput?.value || '';
     memberInfo.nick_name = memberNickNameInput?.value || '';
     memberInfo.address = memberAddressInput?.value || '';
-    saveMemberInfoToDb().catch((err) => {
+    try {
+      await saveMemberInfoToDb();
+      updateMemberSaveButtonLabel('已儲存');
+      if (memberSaveFeedbackTimer) clearTimeout(memberSaveFeedbackTimer);
+      memberSaveFeedbackTimer = setTimeout(() => {
+        memberSaveFeedbackTimer = null;
+        setMemberEditMode(false);
+      }, 1000);
+    } catch (err) {
       console.error('儲存 member_info 失敗', err);
-    });
+    }
   });
 }
 
