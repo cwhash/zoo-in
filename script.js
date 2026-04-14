@@ -471,7 +471,7 @@ if (signOutBtn) {
 }
 
 if (userMenuButton) {
-  userMenuButton.addEventListener('click', (e) => {
+  userMenuButton.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
     toggleUserMenu();
@@ -507,7 +507,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && sidebar?.classList.contains('open')) closeSidebar();
   if (e.key === 'Escape' && !userMenuPanel?.classList.contains('hidden')) closeUserMenu();
 });
-document.addEventListener('click', (e) => {
+document.addEventListener('pointerdown', (e) => {
   if (!userMenuPanel || !userMenuButton) return;
   const target = e.target;
   if (!(target instanceof Node)) return;
