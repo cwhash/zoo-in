@@ -543,19 +543,78 @@ main {
 }
 
 /* ===== User Info (topbar) ===== */
+.user-info {
+  margin-left: auto;
+  position: relative;
+}
+
+.user-menu-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
 .user-avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--border);
+}
+
+.user-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  width: min(84vw, 280px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.7rem;
+  background: var(--panel-solid);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 0.55rem;
+  z-index: 18;
+}
+
+.member-title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.member-field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.member-field input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.86rem;
+  color: var(--text);
+}
+
+.member-save-btn {
+  border: 1px solid var(--border);
+  background: #f7f9ff;
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
 }
 
 .signout-btn {
   border: 1px solid var(--border);
   background: transparent;
   border-radius: 8px;
-  padding: 0.3rem 0.7rem;
+  padding: 0.45rem 0.7rem;
   font-size: 0.8rem;
   color: var(--muted);
   cursor: pointer;

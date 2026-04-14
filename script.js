@@ -26,7 +26,22 @@ const levelLabel = {
 };
 
 // ===================== DOM 元素 =====================
-const REQUIRED_ELEMENT_IDS = ['taskGrid', 'sidebar', 'menuButton', 'closeButton', 'overlay', 'taskDetails', 'deadlineCountdown', 'sidebarTitle'];
+const REQUIRED_ELEMENT_IDS = [
+  'taskGrid',
+  'sidebar',
+  'menuButton',
+  'closeButton',
+  'overlay',
+  'taskDetails',
+  'deadlineCountdown',
+  'sidebarTitle',
+  'userMenuButton',
+  'userMenuPanel',
+  'memberRealNameInput',
+  'memberNickNameInput',
+  'memberAddressInput',
+  'memberSaveBtn',
+];
 
 const dom = {};
 const missingIds = [];
@@ -49,6 +64,12 @@ const overlay = dom.overlay;
 const taskDetails = dom.taskDetails;
 const deadlineCountdown = dom.deadlineCountdown;
 const sidebarTitle = dom.sidebarTitle;
+const userMenuButton = dom.userMenuButton;
+const userMenuPanel = dom.userMenuPanel;
+const memberRealNameInput = dom.memberRealNameInput;
+const memberNickNameInput = dom.memberNickNameInput;
+const memberAddressInput = dom.memberAddressInput;
+const memberSaveBtn = dom.memberSaveBtn;
 
 // ===================== 任務生成 =====================
 function generateTasks() {
@@ -58,12 +79,15 @@ function generateTasks() {
     const level = code[0];
     const index = Number(code.slice(1));
     tasks.push({
-      id: i,
+      task_id: code,
       level,
       index,
       code,
-      title: '',
-      done: false,
+      task_title: '',
+      task_description: '',
+      task_status: false,
+      task_completion_time: null,
+      task_image_URL: null,
     });
   }
   return tasks;
@@ -72,9 +96,10 @@ function generateTasks() {
 // ===================== 資料庫 =====================
 let currentUser = null;
 let tasks = generateTasks();
+let memberInfo = null;
 
 function isTaskLike(task) {
-  return task && typeof task === 'object' && typeof task.code === 'string';
+  return task && typeof task === 'object' && typeof task.task_id === 'string';
 }
 
 function normalizeTasks(rawTasks) {
@@ -86,12 +111,19 @@ function normalizeTasks(rawTasks) {
     return {
       ...defaultTask,
       ...savedTask,
-      id: defaultTask.id,
+      task_id: defaultTask.task_id,
       level: defaultTask.level,
       index: defaultTask.index,
       code: defaultTask.code,
-      title: typeof savedTask.title === 'string' ? savedTask.title : '',
-      done: Boolean(savedTask.done),
+      task_title: typeof savedTask.task_title === 'string'
+        ? savedTask.task_title
+        : (typeof savedTask.title === 'string' ? savedTask.title : ''),
+      task_description: typeof savedTask.task_description === 'string' ? savedTask.task_description : '',
+      task_status: typeof savedTask.task_status === 'boolean' ? savedTask.task_status : Boolean(savedTask.done),
+      task_completion_time: Number.isFinite(Number(savedTask.task_completion_time))
+        ? Number(savedTask.task_completion_time)
+        : null,
+      task_image_URL: savedTask.task_image_URL ?? null,
     };
   });
 }
@@ -102,22 +134,100 @@ function ensureRenderableTasks() {
   }
 }
 
-function getDbRef(uid) {
-  return db.ref('users/' + uid + '/tasks');
+function getMemberInfoRef(uid) {
+  return db.ref('users/' + uid + '/member_info');
+}
+
+function getTaskListRef(uid) {
+  return db.ref('users/' + uid + '/life_grid_2027/task_list');
+}
+
+function getDefaultMemberInfo() {
+  return {
+    member_id: Date.now(),
+    authenticated_user: true,
+    real_name: '',
+    nick_name: '',
+    address: '',
+    notes: '',
+  };
+}
+
+function normalizeMemberInfo(rawMemberInfo) {
+  const defaults = getDefaultMemberInfo();
+  if (!rawMemberInfo || typeof rawMemberInfo !== 'object') return defaults;
+
+  return {
+    ...defaults,
+    ...rawMemberInfo,
+    real_name: typeof rawMemberInfo.real_name === 'string' ? rawMemberInfo.real_name : '',
+    nick_name: typeof rawMemberInfo.nick_name === 'string' ? rawMemberInfo.nick_name : '',
+    address: typeof rawMemberInfo.address === 'string' ? rawMemberInfo.address : '',
+  };
+}
+
+function renderMemberInfoPanel() {
+  if (!memberRealNameInput || !memberNickNameInput || !memberAddressInput) return;
+  memberRealNameInput.value = memberInfo?.real_name || '';
+  memberNickNameInput.value = memberInfo?.nick_name || '';
+  memberAddressInput.value = memberInfo?.address || '';
+}
+
+function closeUserMenu() {
+  if (!userMenuPanel || !userMenuButton) return;
+  userMenuPanel.classList.add('hidden');
+  userMenuPanel.setAttribute('aria-hidden', 'true');
+  userMenuButton.setAttribute('aria-expanded', 'false');
+}
+
+function openUserMenu() {
+  if (!userMenuPanel || !userMenuButton) return;
+  renderMemberInfoPanel();
+  userMenuPanel.classList.remove('hidden');
+  userMenuPanel.setAttribute('aria-hidden', 'false');
+  userMenuButton.setAttribute('aria-expanded', 'true');
+}
+
+function toggleUserMenu() {
+  if (userMenuPanel?.classList.contains('hidden')) {
+    openUserMenu();
+  } else {
+    closeUserMenu();
+  }
+}
+
+function saveMemberInfoToDb() {
+  if (!currentUser) return;
+  if (!memberInfo) memberInfo = getDefaultMemberInfo();
+  getMemberInfoRef(currentUser.uid).set(memberInfo);
+}
+
+function loadMemberInfoFromDb(uid) {
+  getMemberInfoRef(uid).once('value', (memberSnap) => {
+    if (memberSnap.exists()) {
+      memberInfo = normalizeMemberInfo(memberSnap.val());
+      getMemberInfoRef(uid).set(memberInfo);
+    } else {
+      memberInfo = getDefaultMemberInfo();
+      getMemberInfoRef(uid).set(memberInfo);
+    }
+    renderMemberInfoPanel();
+  });
 }
 
 function saveTasksToDb() {
   if (!currentUser) return;
-  getDbRef(currentUser.uid).set(tasks);
+  getTaskListRef(currentUser.uid).set(tasks);
 }
 
 function loadTasksFromDb(uid) {
-  getDbRef(uid).once('value', (snapshot) => {
+  getTaskListRef(uid).once('value', (snapshot) => {
     const data = snapshot.val();
-    if (Array.isArray(data)) {
+    if (Array.isArray(data) && data.length > 0) {
       tasks = normalizeTasks(data);
     } else {
       tasks = generateTasks();
+      getTaskListRef(uid).set(tasks);
     }
     renderGrid();
   });
@@ -131,23 +241,25 @@ function renderGrid() {
 
   tasks.forEach((task, idx) => {
     const cell = document.createElement('div');
-    const doneClass = task.done ? ' completed' : '';
+    const doneClass = task.task_status ? ' completed' : '';
     cell.className = `task-cell level-${task.level}${doneClass}`;
     cell.style.setProperty('--i', String(idx));
-    cell.dataset.id = task.id;
-    if (task.done) {
-      const today = new Date();
-      cell.dataset.stampDate = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+    cell.dataset.id = task.task_id;
+    if (task.task_status && task.task_completion_time) {
+      const d = new Date(task.task_completion_time);
+      cell.dataset.stampDate = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+    } else if (task.task_status) {
+      cell.dataset.stampDate = '已完成';
     }
     cell.textContent = task.code || `${task.level}${task.index}`;
-    cell.addEventListener('click', () => openSidebar(task.id));
+    cell.addEventListener('click', () => openSidebar(task.task_id));
     gridElement.appendChild(cell);
   });
 }
 
 // ===================== Sidebar =====================
 function openSidebar(taskId) {
-  const task = tasks.find((t) => t.id === taskId);
+  const task = tasks.find((t) => t.task_id === taskId);
   if (!task) return;
 
   taskDetails.innerHTML = '';
@@ -164,11 +276,11 @@ function openSidebar(taskId) {
   titleLi.innerHTML = `<strong>標題</strong>`;
   const titleInput = document.createElement('input');
   titleInput.type = 'text';
-  titleInput.value = task.title;
+  titleInput.value = task.task_title;
   titleInput.placeholder = '輸入任務標題';
   titleInput.style.cssText = 'width:100%;padding:6px;margin-top:4px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#1a2340;font-size:0.9rem;';
   titleInput.addEventListener('input', (e) => {
-    task.title = e.target.value;
+    task.task_title = e.target.value;
     saveTasksToDb();
     renderGrid();
   });
@@ -180,17 +292,18 @@ function openSidebar(taskId) {
   doneLi.style.marginTop = '12px';
   const doneCheckbox = document.createElement('input');
   doneCheckbox.type = 'checkbox';
-  doneCheckbox.checked = task.done;
-  doneCheckbox.id = 'doneCheck';
+  doneCheckbox.checked = task.task_status;
+  doneCheckbox.id = `doneCheck-${task.task_id}`;
   doneCheckbox.style.width = '16px';
   doneCheckbox.style.height = '16px';
   doneCheckbox.addEventListener('change', (e) => {
-    task.done = e.target.checked;
+    task.task_status = e.target.checked;
+    task.task_completion_time = task.task_status ? Date.now() : null;
     saveTasksToDb();
     renderGrid();
   });
   const doneCheckLabel = document.createElement('label');
-  doneCheckLabel.htmlFor = 'doneCheck';
+  doneCheckLabel.htmlFor = `doneCheck-${task.task_id}`;
   doneCheckLabel.textContent = ' 已完成';
   doneCheckLabel.style.marginLeft = '6px';
   doneCheckLabel.style.fontSize = '0.9rem';
@@ -226,11 +339,11 @@ function openTaskListSidebar() {
   sortedTasks.forEach((task) => {
     const item = document.createElement('li');
     item.className = 'task-list-item';
-    const taskTitle = task.title?.trim() || '未命名任務';
+    const taskTitle = task.task_title?.trim() || '未命名任務';
     item.innerHTML =
       `<div><strong>${task.code || `${task.level}${task.index}`}</strong> - ${taskTitle}</div>` +
-      `<small>${task.done ? '已完成' : '未完成'}</small>`;
-    item.addEventListener('click', () => openSidebar(task.id));
+      `<small>${task.task_status ? '已完成' : '未完成'}</small>`;
+    item.addEventListener('click', () => openSidebar(task.task_id));
     taskDetails.appendChild(item);
   });
 
@@ -293,15 +406,19 @@ function showApp(user) {
     userAvatar.src = user.photoURL || '';
     userAvatar.alt = user.displayName || '';
   }
+  closeUserMenu();
+  loadMemberInfoFromDb(user.uid);
   renderGrid();
   loadTasksFromDb(user.uid);
 }
 
 function showLogin() {
   currentUser = null;
+  memberInfo = null;
   if (loginScreen) loginScreen.classList.remove('hidden');
   if (appDiv) appDiv.style.display = 'none';
   if (userInfo) userInfo.style.display = 'none';
+  closeUserMenu();
 }
 
 auth.onAuthStateChanged((user) => {
@@ -328,6 +445,27 @@ if (signOutBtn) {
   });
 }
 
+if (userMenuButton) {
+  userMenuButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleUserMenu();
+  });
+}
+
+if (memberSaveBtn) {
+  memberSaveBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!currentUser) return;
+    if (!memberInfo) memberInfo = getDefaultMemberInfo();
+    memberInfo.real_name = memberRealNameInput?.value || '';
+    memberInfo.nick_name = memberNickNameInput?.value || '';
+    memberInfo.address = memberAddressInput?.value || '';
+    saveMemberInfoToDb();
+  });
+}
+
 // ===================== 事件 =====================
 menuButton?.addEventListener('click', () => {
   if (sidebar.classList.contains('open')) {
@@ -340,6 +478,15 @@ closeButton?.addEventListener('click', closeSidebar);
 overlay?.addEventListener('click', closeSidebar);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && sidebar?.classList.contains('open')) closeSidebar();
+  if (e.key === 'Escape' && !userMenuPanel?.classList.contains('hidden')) closeUserMenu();
+});
+document.addEventListener('pointerdown', (e) => {
+  if (!userMenuPanel || !userMenuButton) return;
+  const target = e.target;
+  if (!(target instanceof Node)) return;
+  if (!userMenuPanel.contains(target) && !userMenuButton.contains(target)) {
+    closeUserMenu();
+  }
 });
 
 renderGrid();
