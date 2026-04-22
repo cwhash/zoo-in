@@ -1,3 +1,5 @@
+🌐 [English](README.md) | [繁體中文](README_zh-TW.md)
+
 # Life Grid
 
 Life Grid is a mobile-first web app that presents 25 personal missions in a 5×5 board. Each mission has a level, title, description, and completion state so users can track progress in a simple visual layout.
@@ -51,7 +53,7 @@ Then open `http://localhost:8000` in your browser.
 - `index.html`: page structure and core UI containers.
 - `styles.css`: visual theme, layout, and responsive styles.
 - `script.js`: task generation, rendering, and interactions.
-- `README_zh.md`: Traditional Chinese version of this README.
+- `README_zh-TW.md`: Traditional Chinese version of this README.
 
 ## Notes
 
