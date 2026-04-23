@@ -1,12 +1,12 @@
 // ===================== Firebase 設定 =====================
 const firebaseConfig = {
-  apiKey: "__LIFEGRID_APIKEY__",
-  authDomain: "life-grid-446c4.firebaseapp.com",
-  databaseURL: "https://life-grid-446c4-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "life-grid-446c4",
-  storageBucket: "life-grid-446c4.firebasestorage.app",
-  messagingSenderId: "905154276293",
-  appId: "1:905154276293:web:c603cbac014d5305c379ac"
+  apiKey: "__ZOOIN_FIREBASE_KEY__",
+  authDomain: "zoo-in.firebaseapp.com",
+  databaseURL: "https://zoo-in-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "zoo-in",
+  storageBucket: "zoo-in.firebasestorage.app",
+  messagingSenderId: "379497990494",
+  appId: "1:379497990494:web:0e1aae1555988fa309e7cf"
 };
 
 // 初始化 Firebase
