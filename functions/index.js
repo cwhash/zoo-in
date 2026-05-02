@@ -75,6 +75,10 @@ function isActivityOpen(time = Date.now()) {
   return time >= LIFE_GRID_START_AT && time < LIFE_GRID_END_AT;
 }
 
+function canUnlockActivity(time = Date.now()) {
+  return time < LIFE_GRID_END_AT;
+}
+
 function getTaipeiDateKey(time = Date.now()) {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Taipei',
@@ -222,7 +226,7 @@ exports.unlockActivity = functions.region(REGION).https.onCall(async (data, cont
   }
 
   const activity = await ensureActivityConfig();
-  if (activity.status !== 'active' || !isActivityOpen()) {
+  if (activity.status !== 'active' || !canUnlockActivity()) {
     throw new functions.https.HttpsError('failed-precondition', '活動目前不可解鎖。');
   }
 

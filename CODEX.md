@@ -21,6 +21,7 @@ This document defines development notes for the Zoo-In project.
 
 - Life Grid 2027 uses activity code `2027-LIFE-GRID`.
 - Activity period is 2026-07-01 through 2027-12-31.
+- Activity unlock is allowed before the start date; task edits and completion are still limited to the activity period.
 - S/A/B/C tasks are user-defined and lock after first save.
 - N tasks are shared official tasks maintained by admins.
 - Completing a task requires one 4:5 JPEG photo.

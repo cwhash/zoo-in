@@ -71,11 +71,13 @@ const dom = {};
   'googleSignInBtn',
   'app',
   'pageTitle',
-  'backToHomeBtn',
+  'menuButton',
+  'profileButton',
   'signOutBtn',
   'dashboardView',
   'lifeGridView',
   'googleAvatar',
+  'profileGoogleAvatar',
   'googleName',
   'googleEmail',
   'nickNameInput',
@@ -98,6 +100,12 @@ const dom = {};
   'emptyAchievements',
   'activityFeed',
   'emptyFeed',
+  'navDrawer',
+  'closeNavDrawerBtn',
+  'homeNavBtn',
+  'lifeGridNavBtn',
+  'profileDrawer',
+  'closeProfileDrawerBtn',
   'taskPanel',
   'taskPanelCode',
   'taskPanelTitle',
@@ -307,6 +315,10 @@ function renderAccount() {
     dom.googleAvatar.src = currentUser.photoURL || '';
     dom.googleAvatar.alt = currentUser.displayName || 'Google 帳號';
   }
+  if (dom.profileGoogleAvatar) {
+    dom.profileGoogleAvatar.src = currentUser.photoURL || '';
+    dom.profileGoogleAvatar.alt = currentUser.displayName || 'Google 帳號';
+  }
   if (dom.googleName) dom.googleName.textContent = currentUser.displayName || '未提供姓名';
   if (dom.googleEmail) dom.googleEmail.textContent = currentUser.email || '未提供 email';
   if (dom.nickNameInput) dom.nickNameInput.value = profile?.public?.nick_name || '匿名';
@@ -318,6 +330,7 @@ function renderDashboard() {
   const hasUnlock = Boolean(activityUnlock?.unlocked_at);
   dom.activityCards.innerHTML = '';
   dom.emptyActivities.classList.toggle('hidden', hasUnlock);
+  dom.lifeGridNavBtn?.classList.toggle('hidden', !hasUnlock);
 
   if (hasUnlock) {
     const completed = getCompletedTasks().length;
@@ -435,10 +448,10 @@ function renderFeed() {
 }
 
 function showDashboard() {
-  dom.pageTitle.textContent = '活動中心';
+  dom.pageTitle.textContent = 'ZOO-IN';
   dom.dashboardView.classList.remove('hidden');
   dom.lifeGridView.classList.add('hidden');
-  dom.backToHomeBtn.classList.add('hidden');
+  closeChromeDrawers();
   closeTaskPanel();
   renderDashboard();
 }
@@ -447,7 +460,7 @@ function showLifeGrid() {
   dom.pageTitle.textContent = 'Life Grid 2027';
   dom.dashboardView.classList.add('hidden');
   dom.lifeGridView.classList.remove('hidden');
-  dom.backToHomeBtn.classList.remove('hidden');
+  closeChromeDrawers();
   renderLifeGrid();
 }
 
@@ -463,6 +476,7 @@ function showLogin() {
   if (countdownTimer) clearInterval(countdownTimer);
   dom.app.hidden = true;
   dom.loginScreen.classList.remove('hidden');
+  closeChromeDrawers();
   closeTaskPanel();
 }
 
@@ -472,6 +486,33 @@ function showApp() {
   startCountdown();
   renderAccount();
   showDashboard();
+}
+
+function openNavDrawer() {
+  dom.navDrawer?.classList.add('open');
+  dom.navDrawer?.setAttribute('aria-hidden', 'false');
+  dom.menuButton?.setAttribute('aria-expanded', 'true');
+  dom.overlay?.classList.remove('hidden');
+}
+
+function openProfileDrawer() {
+  renderAccount();
+  dom.profileDrawer?.classList.add('open');
+  dom.profileDrawer?.setAttribute('aria-hidden', 'false');
+  dom.profileButton?.setAttribute('aria-expanded', 'true');
+  dom.overlay?.classList.remove('hidden');
+}
+
+function closeChromeDrawers() {
+  dom.navDrawer?.classList.remove('open');
+  dom.navDrawer?.setAttribute('aria-hidden', 'true');
+  dom.menuButton?.setAttribute('aria-expanded', 'false');
+  dom.profileDrawer?.classList.remove('open');
+  dom.profileDrawer?.setAttribute('aria-hidden', 'true');
+  dom.profileButton?.setAttribute('aria-expanded', 'false');
+  if (!dom.taskPanel?.classList.contains('open')) {
+    dom.overlay?.classList.add('hidden');
+  }
 }
 
 // ===================== Data Loading =====================
@@ -810,7 +851,9 @@ function closeTaskPanel() {
   selectedTaskId = null;
   dom.taskPanel?.classList.remove('open');
   dom.taskPanel?.setAttribute('aria-hidden', 'true');
-  dom.overlay?.classList.add('hidden');
+  if (!dom.navDrawer?.classList.contains('open') && !dom.profileDrawer?.classList.contains('open')) {
+    dom.overlay?.classList.add('hidden');
+  }
 }
 
 // ===================== Image Crop =====================
@@ -962,12 +1005,30 @@ dom.googleSignInBtn?.addEventListener('click', async () => {
 });
 
 dom.signOutBtn?.addEventListener('click', () => auth.signOut());
-dom.backToHomeBtn?.addEventListener('click', showDashboard);
+dom.menuButton?.addEventListener('click', openNavDrawer);
+dom.profileButton?.addEventListener('click', openProfileDrawer);
+dom.closeNavDrawerBtn?.addEventListener('click', closeChromeDrawers);
+dom.closeProfileDrawerBtn?.addEventListener('click', closeChromeDrawers);
+dom.homeNavBtn?.addEventListener('click', showDashboard);
+dom.lifeGridNavBtn?.addEventListener('click', () => {
+  if (activityUnlock?.unlocked_at) {
+    showLifeGrid();
+    return;
+  }
+  closeChromeDrawers();
+  showToast('請先輸入活動代碼解鎖 Life Grid。');
+});
 dom.saveProfileBtn?.addEventListener('click', saveProfile);
 dom.unlockForm?.addEventListener('submit', unlockActivity);
 dom.closeTaskPanelBtn?.addEventListener('click', closeTaskPanel);
-dom.overlay?.addEventListener('click', closeTaskPanel);
+dom.overlay?.addEventListener('click', () => {
+  closeTaskPanel();
+  closeChromeDrawers();
+});
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') closeTaskPanel();
+  if (event.key === 'Escape') {
+    closeTaskPanel();
+    closeChromeDrawers();
+  }
 });
