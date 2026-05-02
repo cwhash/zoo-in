@@ -1,68 +1,101 @@
-🌐 [English](README.md) | [繁體中文](README_zh-TW.md)
+# Zoo-In
 
-# Life Grid
+[English](README.md) | [繁體中文](README_zh-TW.md)
 
-Life Grid 是一個行動優先的網頁應用程式，以 5×5 棋盤呈現 25 個個人任務。每個任務包含等級、標題、描述和完成狀態，讓使用者能透過簡潔的視覺版面追蹤進度。
+Zoo-In 是一個以 Firebase 為基礎的活動平台。使用者用 Google 登入後，可以管理 Zoo-In 會員資料、輸入活動代碼，並解鎖 Life Grid 2027 這類活動。
 
-## 適用對象
+## 目前產品範圍
 
-- 想要輕量任務清單、不需安裝 App 的人。
-- 偏好依優先等級（S、A、B、C、N）檢視任務的使用者。
-- 任何想要快速、單頁、手機友善介面的人。
+- 使用 Firebase Authentication 做 Google 登入。
+- 登入後先進入 Zoo-In 會員活動中心。
+- Zoo-In 會員資料會保存公開暱稱。Google 原始姓名與大頭貼只顯示給本人。
+- 活動代碼由 Cloud Functions 驗證。
+- Life Grid 2027 是第一個活動。
+- Life Grid 完成任務時必須上傳 4:5 照片，照片存於 Firebase Storage。
+- Life Grid 有獨立的隱藏成就系統。
+- Life Grid 活動頁下方顯示最新 10 筆公開動態。
+- 管理員後台獨立於 `admin.html`。
 
-## 功能
+## Life Grid 2027 規則
 
-- 在 5×5 格狀版面中檢視全部 25 個任務。
-- 一眼掌握各等級任務分佈（S×1、A×2、B×4、C×8、N×10）。
-- 透過選單按鈕開啟左側邊欄。
-- 展開各任務並編輯標題與描述。
-- 以勾選框標記任務完成。
-- 完成的任務格會顯示完成日期。
+- 活動代碼：`2027-LIFE-GRID`，不分大小寫。
+- 活動時間：2026/07/01 到 2027/12/31。
+- 活動結束後只能查看紀錄，不能新增或完成任務。
+- S/A/B/C 任務由使用者自行填寫，第一次儲存後鎖定。
+- N 任務是所有人共用的官方任務，由管理員後台編輯。
+- 完成任務需要裁切並上傳 4:5 JPEG 照片。
+- 任務照片只允許本人與管理員查看，不公開。
+- 使用者不能自行取消完成，管理員可以取消。
+- 目前內建第一個成就：
+  - 標題：`萬丈高樓平地起`
+  - 內文：`傳奇的開始！`
+  - 條件：完成第一個任務。
 
-## 介面概覽
+## Firebase 資料結構
 
-- 頂部欄：應用程式標題與選單按鈕。
-- 主格狀版面：以等級與編號標示的彩色任務格（例如 `S1`、`A1`、`N10`）。
-- 側邊欄：完整任務清單，包含可編輯欄位與完成控制項。
+主要 Realtime Database 路徑：
 
-## 技術堆疊
+```txt
+users/{uid}/profile
+users/{uid}/activity_unlocks/{activity_id}
+users/{uid}/activities/{activity_id}/tasks/{task_id}
+users/{uid}/achievements/{activity_id}/{achievement_id}
+activities/{activity_id}
+activity_codes/{activity_id}
+activity_feeds/{activity_id}/{feed_id}
+submissions/{activity_id}/{uid}/{task_id}
+admins/{uid}
+```
 
-- HTML
-- CSS
-- JavaScript（原生）
+任務照片 Storage 路徑：
 
-## Firebase 設定
+```txt
+submissions/{activity_id}/{uid}/{task_id}.jpg
+```
 
-本專案的 `firebase-config.js` 包含 Firebase 設定，包括 Web API 金鑰。
+## Cloud Functions
 
-若需更新專案或網域限制，請直接編輯 `firebase-config.js` 並提交更新後的值。
+Functions 專案位於 `functions/`。
+
+Callable functions：
+
+- `unlockActivity`：驗證活動代碼、冷卻時間、使用次數，並寫入解鎖資料。
+- `completeTask`：檢查活動解鎖與照片上傳，完成任務、寫入公開動態、發放成就。
+- `adminUpdateNTask`：管理員編輯官方 N 任務。
+- `adminResetTaskCompletion`：管理員取消會員任務完成狀態，並重新檢查成就。
+- `adminDeleteUserData`：刪除會員 Zoo-In 資料、提交紀錄、照片、公開動態與成就，但保留 Firebase Auth 帳號。
 
 ## 本機執行
 
 ```bash
-git clone https://github.com/cwhash/life-grid.git
-cd life-grid
 python -m http.server 8000
 ```
 
-接著在瀏覽器中開啟 `http://localhost:8000`。
+打開 `http://localhost:8000`。
+
+Google 登入需要先在 Firebase Authentication 的 Authorized domains 加入 `localhost`。
+
+## 部署
+
+安裝 Firebase CLI 後部署：
+
+```bash
+firebase deploy
+```
+
+第一個管理員需要手動在 Realtime Database 加入：
+
+```txt
+admins/{uid}: true
+```
 
 ## 檔案說明
 
-- `index.html`：頁面結構與核心 UI 容器。
-- `styles.css`：視覺主題、版面配置與響應式樣式。
-- `script.js`：任務產生、渲染與互動邏輯。
-- `README_zh-TW.md`：本檔案（繁體中文版 README）。
-
-## 備註
-
-- 透過 Firebase Authentication 啟用 Google 登入。
-- 任務資料儲存於 Firebase Realtime Database，依使用者區隔。
-
-## 登入問題排除
-
-若登入時出現 **「The requested action is invalid.」**，請先檢查以下 Firebase 設定：
-
-1. **Authentication → Sign-in method**：確認已啟用 **Google**。
-2. **Authentication → Settings → Authorized domains**：包含目前使用的網域（本機測試需加入 `localhost`）。
-3. 若瀏覽器封鎖彈出式登入視窗，請允許此網站的彈出式視窗後重試。
+- `index.html`：使用者前台 Zoo-In 與 Life Grid UI。
+- `admin.html`：獨立管理員後台。
+- `styles.css`：共用樣式。
+- `script.js`：前台互動邏輯。
+- `admin.js`：後台互動邏輯。
+- `database.rules.json`：Realtime Database 規則。
+- `storage.rules`：Firebase Storage 規則。
+- `functions/index.js`：Cloud Functions。

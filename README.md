@@ -1,69 +1,101 @@
-🌐 [English](README.md) | [繁體中文](README_zh-TW.md)
+# Zoo-In
 
-# Life Grid
+[English](README.md) | [繁體中文](README_zh-TW.md)
 
-Life Grid is a mobile-first web app that presents 25 personal missions in a 5×5 board. Each mission has a level, title, description, and completion state so users can track progress in a simple visual layout.
- 
-## Who this is for
+Zoo-In is a Firebase-based activity platform. Users sign in with Google, manage a Zoo-In profile, enter an activity code, and unlock activity-specific experiences such as Life Grid 2027.
 
-- People who want a lightweight mission checklist without installing an app.
-- Users who prefer to review tasks by priority level (S, A, B, C, N).
-- Anyone who wants a fast, single-page interface that works on phones.
+## Current Product Scope
 
-## What users can do
+- Google sign-in through Firebase Authentication.
+- Zoo-In member home after login.
+- Public nickname stored in Zoo-In profile. Google display name and avatar are shown only to the signed-in user.
+- Activity unlock by Cloud Functions.
+- Life Grid 2027 as the first activity.
+- Life Grid task completion requires a 4:5 photo upload to Firebase Storage.
+- Life Grid has hidden, activity-specific achievements.
+- Life Grid activity page shows the latest 10 public feed events.
+- Separate `admin.html` page for admin tasks.
 
-- View all 25 tasks in a 5×5 grid.
-- See task level distribution at a glance (S×1, A×2, B×4, C×8, N×10).
-- Open the left sidebar from the menu button.
-- Expand each task and edit its title and description.
-- Mark tasks as completed with a checkbox.
-- See a completion date stamp on completed task cells.
+## Life Grid 2027 Rules
 
-## Interface overview
+- Activity code: `2027-LIFE-GRID`, case-insensitive.
+- Activity period: July 1, 2026 to December 31, 2027.
+- After the activity ends, users can only view records.
+- S/A/B/C tasks are filled by the user and lock after first save.
+- N tasks are shared official tasks edited by admins.
+- Completing a task requires a cropped 4:5 JPEG photo.
+- Uploaded task photos are private to the user and admins.
+- Completed tasks cannot be cancelled by users. Admins can reset completion.
+- The first bundled achievement is:
+  - Title: `萬丈高樓平地起`
+  - Description: `傳奇的開始！`
+  - Condition: complete the first task.
 
-- Top bar: app title and menu button.
-- Main grid: colored task cells labeled by level and index (for example, `S1`, `A1`, `N10`).
-- Sidebar: full task list with editable fields and completion controls.
+## Firebase Structure
 
-## Tech stack
+Main Realtime Database paths:
 
-- HTML
-- CSS
-- JavaScript (vanilla)
+```txt
+users/{uid}/profile
+users/{uid}/activity_unlocks/{activity_id}
+users/{uid}/activities/{activity_id}/tasks/{task_id}
+users/{uid}/achievements/{activity_id}/{achievement_id}
+activities/{activity_id}
+activity_codes/{activity_id}
+activity_feeds/{activity_id}/{feed_id}
+submissions/{activity_id}/{uid}/{task_id}
+admins/{uid}
+```
 
+Storage path for task photos:
 
-## Firebase configuration
+```txt
+submissions/{activity_id}/{uid}/{task_id}.jpg
+```
 
-`firebase-config.js` in this repository contains the Firebase configuration used by the app, including the Web API key.
+## Cloud Functions
 
-If you update the project or domain restrictions, edit `firebase-config.js` directly and commit the updated values.
+The Functions project lives in `functions/`.
 
-## Run locally
+Callable functions:
+
+- `unlockActivity`: validates the activity code, cooldown, usage limit, and writes unlock data.
+- `completeTask`: verifies unlock state and uploaded photo, completes the task, writes the public feed, and unlocks achievements.
+- `adminUpdateNTask`: lets admins edit official N tasks.
+- `adminResetTaskCompletion`: lets admins cancel a user's task completion and re-check achievements.
+- `adminDeleteUserData`: deletes a user's Zoo-In data, submissions, photos, feed entries, and achievements while leaving Firebase Auth intact.
+
+## Run Locally
 
 ```bash
-git clone https://github.com/cwhash/life-grid.git
-cd life-grid
 python -m http.server 8000
 ```
 
-Then open `http://localhost:8000` in your browser.
+Open `http://localhost:8000`.
 
-## File guide
+For Google sign-in, add `localhost` in Firebase Authentication authorized domains.
 
-- `index.html`: page structure and core UI containers.
-- `styles.css`: visual theme, layout, and responsive styles.
-- `script.js`: task generation, rendering, and interactions.
-- `README_zh-TW.md`: Traditional Chinese version of this README.
+## Deploy
 
-## Notes
+Install Firebase CLI and deploy:
 
-- Google sign-in is enabled via Firebase Authentication.
-- Task data is stored in Firebase Realtime Database and is scoped per user.
+```bash
+firebase deploy
+```
 
-## Login troubleshooting
+The first admin must be added manually in Realtime Database:
 
-If sign-in shows **"The requested action is invalid."**, check these Firebase settings first:
+```txt
+admins/{uid}: true
+```
 
-1. **Authentication → Sign-in method**: ensure **Google** is enabled.
-2. **Authentication → Settings → Authorized domains**: include your current domain (for local testing, include `localhost`).
-3. If popup sign-in is blocked by the browser, allow popups for this site and try again.
+## File Guide
+
+- `index.html`: user-facing Zoo-In and Life Grid UI.
+- `admin.html`: separate admin UI.
+- `styles.css`: shared frontend styles.
+- `script.js`: user-facing app behavior.
+- `admin.js`: admin page behavior.
+- `database.rules.json`: Realtime Database rules.
+- `storage.rules`: Firebase Storage rules.
+- `functions/index.js`: Cloud Functions.
