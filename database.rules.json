@@ -1,9 +1,95 @@
 {
   "rules": {
+    ".read": false,
+    ".write": false,
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+      }
+    },
+    "activities": {
+      "$activity_id": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+      }
+    },
+    "activity_codes": {
+      "$activity_id": {
+        ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+      }
+    },
+    "activity_feeds": {
+      "$activity_id": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        ".indexOn": ["created_at"]
+      }
+    },
+    "submissions": {
+      "$activity_id": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+          ".write": false
+        }
+      }
+    },
+    "user_code_attempts": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": false
+      }
+    },
     "users": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": false,
+        "profile": {
+          ".write": "auth != null && auth.uid === $uid",
+          "public": {
+            "nick_name": {
+              ".validate": "newData.isString() && newData.val().length <= 10"
+            }
+          },
+          "private": {
+            "real_name": {
+              ".validate": "newData.isString() && newData.val().length <= 60"
+            },
+            "address": {
+              ".validate": "newData.isString() && newData.val().length <= 120"
+            }
+          },
+          "created_at": {
+            ".validate": "newData.isNumber()"
+          },
+          "updated_at": {
+            ".validate": "newData.isNumber()"
+          },
+          "schema_version": {
+            ".validate": "newData.isNumber()"
+          }
+        },
+        "activities": {
+          "$activity_id": {
+            "tasks": {
+              "$task_id": {
+                ".write": "auth != null && auth.uid === $uid && !data.child('locked_at').exists() && data.child('status').val() !== 'completed'",
+                ".validate": "newData.hasChildren(['task_id', 'level', 'custom_title', 'status', 'locked_at']) && newData.child('task_id').val() === $task_id && newData.child('custom_title').isString() && newData.child('custom_title').val().length > 0 && newData.child('custom_title').val().length <= 50 && newData.child('status').val() === 'open' && newData.child('locked_at').isNumber()"
+              }
+            }
+          }
+        },
+        "activity_unlocks": {
+          "$activity_id": {
+            ".write": false
+          }
+        },
+        "achievements": {
+          "$activity_id": {
+            ".write": false
+          }
+        }
       }
     }
   }

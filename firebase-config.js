@@ -1,4 +1,4 @@
-// ===================== Firebase 設定 =====================
+// ===================== Firebase Config =====================
 const firebaseConfig = {
   apiKey: "__ZOOIN_FIREBASE_KEY__",
   authDomain: "zoo-in.firebaseapp.com",
@@ -9,7 +9,8 @@ const firebaseConfig = {
   appId: "1:379497990494:web:0e1aae1555988fa309e7cf"
 };
 
-// 初始化 Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+const storage = firebase.storage();
+const functions = firebase.app().functions('asia-southeast1');

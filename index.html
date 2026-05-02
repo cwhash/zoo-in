@@ -3,95 +3,163 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zoo-in</title>
+    <title>Zoo-In</title>
     <link rel="stylesheet" href="styles.css" />
 
-    <!-- Firebase CDN (compat v9) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
     <script src="firebase-config.js"></script>
   </head>
   <body>
-    <!-- 登入畫面 -->
     <div id="loginScreen" class="login-screen">
-      <div class="login-card">
-        <h1>🔍 Zoo-in</h1>
-        <p>請登入以繼續使用</p>
-        <button id="googleSignInBtn" class="google-signin-btn">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
+      <section class="login-card" aria-labelledby="loginTitle">
+        <p class="eyebrow">Zoo-In</p>
+        <h1 id="loginTitle">登入活動中心</h1>
+        <p>使用 Google 帳號進入 Zoo-In，解鎖你的活動與紀錄。</p>
+        <button id="googleSignInBtn" class="google-signin-btn" type="button">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" width="20" height="20" />
           使用 Google 登入
         </button>
-      </div>
+        <p id="loginError" class="login-error" role="alert"></p>
+      </section>
     </div>
 
-    <div id="app" class="app" style="display:none">
+    <div id="app" class="app" hidden>
       <header class="topbar">
-        <button
-          id="menuButton"
-          class="menu-button"
-          aria-label="Open task details"
-          aria-controls="sidebar"
-          aria-expanded="false"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <h1>Zoo-in</h1>
-        <div class="user-info" id="userInfo" style="display:none;">
-          <button id="userMenuButton" type="button" class="user-menu-button" aria-label="開啟會員資訊" aria-expanded="false">
-            <img id="userAvatar" src="" alt="" class="user-avatar" />
-          </button>
-          <div id="userMenuPanel" class="user-menu-panel hidden" role="menu" aria-hidden="true">
-            <p class="member-title">會員資訊</p>
-            <label class="member-field">
-              <span>real_name</span>
-              <input id="memberRealNameInput" type="text" />
-            </label>
-            <label class="member-field">
-              <span>nick_name</span>
-              <input id="memberNickNameInput" type="text" />
-            </label>
-            <label class="member-field">
-              <span>address</span>
-              <input id="memberAddressInput" type="text" />
-            </label>
-            <button id="memberSaveBtn" type="button" class="member-save-btn">儲存會員資料</button>
-            <button id="signOutBtn" type="button" class="signout-btn">登出</button>
-          </div>
+        <button id="backToHomeBtn" class="icon-text-btn hidden" type="button">返回首頁</button>
+        <div>
+          <p class="eyebrow">Zoo-In</p>
+          <h1 id="pageTitle">活動中心</h1>
         </div>
+        <button id="signOutBtn" class="ghost-btn" type="button">登出</button>
       </header>
 
       <main>
-        <section class="grid-section" aria-label="Task Grid">
-          <div class="level-legend" aria-hidden="true">
-            <div class="legend-item level-S">S × 1</div>
-            <div class="legend-item level-A">A × 2</div>
-            <div class="legend-item level-B">B × 4</div>
-            <div class="legend-item level-C">C × 8</div>
-            <div class="legend-item level-N">N × 10</div>
-          </div>
-          <div id="taskGrid" class="task-grid"></div>
+        <section id="dashboardView" class="dashboard-view">
+          <section class="account-panel" aria-labelledby="accountTitle">
+            <div class="account-identity">
+              <img id="googleAvatar" class="google-avatar" alt="" />
+              <div>
+                <p class="eyebrow">Google 帳號</p>
+                <h2 id="googleName">-</h2>
+                <p id="googleEmail" class="muted-text">-</p>
+              </div>
+            </div>
+
+            <div class="profile-form">
+              <h3 id="accountTitle">會員資料</h3>
+              <label>
+                <span>公開暱稱</span>
+                <input id="nickNameInput" type="text" maxlength="10" placeholder="匿名" />
+              </label>
+              <label>
+                <span>真實姓名</span>
+                <input id="realNameInput" type="text" autocomplete="name" />
+              </label>
+              <label>
+                <span>地址</span>
+                <input id="addressInput" type="text" autocomplete="street-address" />
+              </label>
+              <button id="saveProfileBtn" class="primary-btn" type="button">儲存會員資料</button>
+              <p id="profileMessage" class="form-message" aria-live="polite"></p>
+            </div>
+          </section>
+
+          <section class="unlock-panel" aria-labelledby="unlockTitle">
+            <div>
+              <p class="eyebrow">活動代碼</p>
+              <h2 id="unlockTitle">解鎖新活動</h2>
+            </div>
+            <form id="unlockForm" class="unlock-form">
+              <input id="activityCodeInput" type="text" autocomplete="off" placeholder="輸入活動代碼" />
+              <button id="unlockBtn" class="primary-btn" type="submit">解鎖</button>
+            </form>
+            <p id="unlockMessage" class="form-message" aria-live="polite"></p>
+          </section>
+
+          <section class="activity-panel" aria-labelledby="myActivitiesTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">我的活動</p>
+                <h2 id="myActivitiesTitle">已解鎖活動</h2>
+              </div>
+            </div>
+            <div id="activityCards" class="activity-cards"></div>
+            <p id="emptyActivities" class="empty-text">尚未解鎖任何活動。</p>
+          </section>
         </section>
 
-        <section class="countdown-section" aria-label="Deadline countdown">
-          <p class="countdown-title">Deadline</p>
-          <p id="deadlineCountdown" class="countdown-value" aria-live="polite">
-            Loading...
-          </p>
+        <section id="lifeGridView" class="life-grid-view hidden" aria-labelledby="lifeGridTitle">
+          <section class="activity-hero">
+            <div>
+              <p class="eyebrow">Life Grid 2027</p>
+              <h2 id="lifeGridTitle">Life Grid</h2>
+              <p id="activityPeriod" class="muted-text">2026/07/01 - 2027/12/31</p>
+            </div>
+            <div class="progress-pill">
+              <strong id="completedCount">0 / 25</strong>
+              <span>已完成</span>
+            </div>
+          </section>
+
+          <section class="countdown-section" aria-label="活動倒數">
+            <p class="countdown-title">活動倒數</p>
+            <p id="deadlineCountdown" class="countdown-value" aria-live="polite">載入中...</p>
+          </section>
+
+          <section class="grid-section" aria-label="Life Grid 任務格">
+            <div class="level-legend" aria-hidden="true">
+              <div class="legend-item level-S">S 1</div>
+              <div class="legend-item level-A">A 2</div>
+              <div class="legend-item level-B">B 4</div>
+              <div class="legend-item level-C">C 8</div>
+              <div class="legend-item level-N">N 10</div>
+            </div>
+            <div id="taskGrid" class="task-grid"></div>
+          </section>
+
+          <section class="achievement-panel" aria-labelledby="achievementsTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">隱藏成就</p>
+                <h2 id="achievementsTitle">已解鎖成就</h2>
+              </div>
+              <span id="achievementCount" class="small-pill">0</span>
+            </div>
+            <div id="achievementList" class="achievement-list"></div>
+            <p id="emptyAchievements" class="empty-text">尚未解鎖成就。</p>
+          </section>
+
+          <section class="feed-panel" aria-labelledby="feedTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">公開動態</p>
+                <h2 id="feedTitle">近期完成與成就</h2>
+              </div>
+            </div>
+            <div id="activityFeed" class="activity-feed" aria-live="polite"></div>
+            <p id="emptyFeed" class="empty-text">目前還沒有公開動態。</p>
+          </section>
         </section>
       </main>
-
-      <aside id="sidebar" class="sidebar" aria-hidden="true" aria-label="任務詳情">
-        <div class="sidebar-header">
-          <h2 id="sidebarTitle">任務詳情</h2>
-          <button id="closeButton" class="close-button" aria-label="關閉側欄">×</button>
-        </div>
-        <ul id="taskDetails" class="task-details"></ul>
-      </aside>
-      <div id="overlay" class="overlay hidden"></div>
     </div>
+
+    <aside id="taskPanel" class="task-panel" aria-hidden="true" aria-labelledby="taskPanelTitle">
+      <div class="task-panel-header">
+        <div>
+          <p id="taskPanelCode" class="eyebrow">任務</p>
+          <h2 id="taskPanelTitle">任務內容</h2>
+        </div>
+        <button id="closeTaskPanelBtn" class="close-button" type="button" aria-label="關閉">×</button>
+      </div>
+      <div id="taskPanelBody" class="task-panel-body"></div>
+    </aside>
+    <div id="overlay" class="overlay hidden"></div>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
     <script src="script.js"></script>
   </body>
