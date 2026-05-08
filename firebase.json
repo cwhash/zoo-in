@@ -24,7 +24,13 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "functions/**"
+      ".github/**",
+      "functions/**",
+      "database.rules.json",
+      "storage.rules",
+      "README*.md",
+      "CODEX.md",
+      ".gitignore"
     ]
   }
 }

@@ -1,0 +1,36 @@
+name: Deploy static site to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-hosting
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: firebase-hosting
+      url: https://zoo-in.web.app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Replace API Key
+        run: sed -i 's/__ZOOIN_FIREBASE_KEY__/${{ secrets.ZOOIN_FIREBASE_KEY }}/g' firebase-config.js
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZOO_IN }}
+          projectId: zoo-in
+          channelId: live
+          entryPoint: .
