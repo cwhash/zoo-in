@@ -169,6 +169,18 @@ function sanitizeText(value, maxLength) {
   return Array.from(String(value || '').trim()).slice(0, maxLength).join('');
 }
 
+function normalizeCode(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+async function hashCode(value) {
+  const data = new TextEncoder().encode(normalizeCode(value));
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 function escapeHtml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -617,9 +629,41 @@ async function unlockActivity(event) {
   dom.unlockBtn.disabled = true;
   setMessage(dom.unlockMessage, '驗證活動代碼中...');
   try {
-    const callUnlockActivity = functions.httpsCallable('unlockActivity');
-    const result = await callUnlockActivity({ code });
-    const name = result?.data?.activityName || 'Life Grid 2027';
+    const codeSnapshot = await db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`).once('value');
+    const codeConfig = codeSnapshot.val() || {};
+    const submittedHash = await hashCode(code);
+    const activityHash = String(codeConfig.code_hash || '');
+    const used = Number(codeConfig.used_count || 0);
+    const max = Number(codeConfig.max_uses || 999);
+    if (!activityHash) {
+      throw new Error('活動代碼尚未設定。');
+    }
+    if (submittedHash !== activityHash) {
+      throw new Error('活動代碼不正確。');
+    }
+    if (used >= max) {
+      throw new Error('活動名額已滿。');
+    }
+
+    const name = activityConfig?.name || 'Life Grid 2027';
+    const time = now();
+    const usageResult = await db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}/used_count`).transaction((current) => {
+      const count = Number(current || 0);
+      if (count >= max) return;
+      return count + 1;
+    });
+    if (!usageResult.committed) {
+      throw new Error('活動名額已滿。');
+    }
+    await getUnlockRef().set({
+      activity_id: LIFE_GRID_ACTIVITY_ID,
+      unlocked_at: time,
+      code_hash: activityHash,
+    });
+    await getUserActivityRef().update({
+      joined_at: time,
+      updated_at: time,
+    });
     dom.activityCodeInput.value = '';
     setMessage(dom.unlockMessage, `已解鎖 ${name}。`);
     showToast(`已解鎖 ${name}`);

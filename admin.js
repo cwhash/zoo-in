@@ -48,6 +48,18 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+function normalizeCode(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+async function hashCode(value) {
+  const data = new TextEncoder().encode(normalizeCode(value));
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 function detachAdminListeners() {
   adminRefs.forEach(({ ref, event, callback }) => ref.off(event, callback));
   adminRefs = [];
@@ -65,7 +77,7 @@ function ensureActivityCodeEditor() {
   form.id = 'activityCodeForm';
   form.className = 'unlock-form';
   form.innerHTML = `
-    <input id="activityCodeAdminInput" type="text" autocomplete="off" placeholder="活動代碼" />
+    <input id="activityCodeAdminInput" type="text" autocomplete="off" placeholder="輸入新的活動代碼" />
     <input id="activityCodeMaxUsesInput" type="number" min="1" max="100000" step="1" placeholder="使用上限" />
     <button id="saveActivityCodeBtn" class="primary-btn" type="submit">儲存</button>
   `;
@@ -146,8 +158,22 @@ async function saveActivityCode(event) {
   adminDom.saveActivityCodeBtn.disabled = true;
   setAdminMessage(adminDom.activityCodeMessage, '儲存中...');
   try {
-    const callUpdate = functions.httpsCallable('adminUpdateActivityCode');
-    await callUpdate({ code, maxUses });
+    const codeRef = db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`);
+    const snapshot = await codeRef.once('value');
+    const existing = snapshot.val() || {};
+    const usedCount = Number(existing.used_count || 0);
+    if (maxUses < usedCount) {
+      throw new Error('使用上限不能小於目前使用次數。');
+    }
+    await codeRef.update({
+      activity_id: LIFE_GRID_ACTIVITY_ID,
+      code_hash: await hashCode(code),
+      max_uses: maxUses,
+      used_count: usedCount,
+      created_at: existing.created_at || Date.now(),
+      updated_at: Date.now(),
+    });
+    adminDom.activityCodeAdminInput.value = '';
     setAdminMessage(adminDom.activityCodeMessage, '活動代碼已更新。');
     showAdminToast('活動代碼已更新。');
   } catch (err) {
@@ -166,9 +192,8 @@ function attachAdminData() {
     const code = snapshot.val() || {};
     const used = Number(code.used_count || 0);
     const max = Number(code.max_uses || 999);
-    adminDom.activityCodeAdminInput.value = code.code || '';
     adminDom.activityCodeMaxUsesInput.value = max;
-    adminDom.codeUsage.textContent = `使用次數：${used} / ${max}`;
+    adminDom.codeUsage.textContent = `使用次數：${used} / ${max}，活動代碼 ${code.code_hash ? '已設定' : '尚未設定'}`;
   });
 
   listenAdmin(db.ref(`activities/${LIFE_GRID_ACTIVITY_ID}/tasks`), 'value', (snapshot) => {

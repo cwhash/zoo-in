@@ -16,8 +16,11 @@
     },
     "activity_codes": {
       "$activity_id": {
-        ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
-        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        "used_count": {
+          ".write": "auth != null && newData.isNumber() && newData.val() === data.val() + 1 && newData.val() <= root.child('activity_codes').child($activity_id).child('max_uses').val()"
+        }
       }
     },
     "activity_feeds": {
@@ -82,7 +85,8 @@
         },
         "activity_unlocks": {
           "$activity_id": {
-            ".write": false
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.child('activity_id').val() === $activity_id && newData.child('code_hash').val() === root.child('activity_codes').child($activity_id).child('code_hash').val() && root.child('activity_codes').child($activity_id).child('used_count').val() <= root.child('activity_codes').child($activity_id).child('max_uses').val()",
+            ".validate": "newData.hasChildren(['activity_id', 'unlocked_at', 'code_hash']) && newData.child('activity_id').isString() && newData.child('unlocked_at').isNumber() && newData.child('code_hash').isString()"
           }
         },
         "achievements": {

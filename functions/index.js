@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const crypto = require('crypto');
 const functions = require('firebase-functions');
 
 admin.initializeApp();
@@ -91,16 +92,20 @@ function normalizeCode(code) {
   return String(code || '').trim().toUpperCase();
 }
 
+function hashCode(code) {
+  return crypto.createHash('sha256').update(normalizeCode(code)).digest('hex');
+}
+
 async function getActivityCodeConfig() {
   const snapshot = await db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`).once('value');
   const data = snapshot.val() || {};
-  const code = normalizeCode(data.code);
-  if (!code) {
+  const codeHash = String(data.code_hash || '');
+  if (!codeHash) {
     throw new functions.https.HttpsError('failed-precondition', '活動代碼尚未設定。');
   }
 
   return {
-    code,
+    codeHash,
     maxUses: Number(data.max_uses || CODE_MAX_USES),
   };
 }
@@ -206,7 +211,7 @@ async function incrementActivityCodeUse(codeConfig) {
   const codeRef = db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`);
   const result = await codeRef.transaction((current) => {
     const data = current || {
-      code: codeConfig.code,
+      code_hash: codeConfig.codeHash,
       activity_id: LIFE_GRID_ACTIVITY_ID,
       max_uses: codeConfig.maxUses || CODE_MAX_USES,
       used_count: 0,
@@ -232,7 +237,7 @@ exports.unlockActivity = functions.region(REGION).https.onCall(async (data, cont
   const uid = assertAuth(context);
   const submittedCode = normalizeCode(data?.code);
   const codeConfig = await getActivityCodeConfig();
-  const isCorrect = submittedCode === codeConfig.code;
+  const isCorrect = hashCode(submittedCode) === codeConfig.codeHash;
   await recordAttempt(uid, isCorrect);
 
   if (!isCorrect) {
@@ -261,7 +266,7 @@ exports.unlockActivity = functions.region(REGION).https.onCall(async (data, cont
     [`users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`]: {
       activity_id: LIFE_GRID_ACTIVITY_ID,
       unlocked_at: time,
-      code_id: LIFE_GRID_ACTIVITY_ID,
+      code_hash: codeConfig.codeHash,
     },
     [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/joined_at`]: time,
     [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/updated_at`]: time,
@@ -451,7 +456,7 @@ exports.adminUpdateActivityCode = functions.region(REGION).https.onCall(async (d
 
   await codeRef.update({
     activity_id: LIFE_GRID_ACTIVITY_ID,
-    code,
+    code_hash: hashCode(code),
     max_uses: maxUses,
     used_count: usedCount,
     created_at: existing.created_at || Date.now(),

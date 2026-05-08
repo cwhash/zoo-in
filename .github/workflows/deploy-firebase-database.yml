@@ -1,27 +1,27 @@
-name: Deploy Firebase Functions
+name: Deploy Firebase Database Rules
 
 on:
   push:
     branches:
       - main
     paths:
-      - "functions/**"
+      - "database.rules.json"
       - "firebase.json"
       - ".firebaserc"
-      - ".github/workflows/deploy-firebase-functions.yml"
+      - ".github/workflows/deploy-firebase-database.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: firebase-functions
+  group: firebase-database
   cancel-in-progress: true
 
 jobs:
   deploy:
     environment:
-      name: firebase-functions
+      name: firebase-database
     runs-on: ubuntu-latest
     env:
       GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
@@ -39,9 +39,5 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZOO_IN }}
         run: printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
 
-      - name: Install function dependencies
-        working-directory: functions
-        run: npm install
-
-      - name: Deploy Firebase Functions
-        run: npx firebase-tools@latest deploy --only functions --project zoo-in --non-interactive
+      - name: Deploy Firebase Database Rules
+        run: npx firebase-tools@latest deploy --only database --project zoo-in --non-interactive
