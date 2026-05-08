@@ -133,6 +133,7 @@ let selectedImageUrl = null;
 let cropState = { zoom: 1, x: 0, y: 0 };
 let toastTimer = null;
 let countdownTimer = null;
+let signInPending = false;
 const activeRefs = [];
 
 // ===================== Helpers =====================
@@ -994,12 +995,19 @@ auth.onAuthStateChanged((user) => {
 });
 
 dom.googleSignInBtn?.addEventListener('click', async () => {
+  if (signInPending) return;
+  signInPending = true;
+  dom.googleSignInBtn.disabled = true;
   setMessage(dom.loginError, '');
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
     await auth.signInWithPopup(provider);
+    signInPending = false;
+    dom.googleSignInBtn.disabled = false;
   } catch (err) {
     console.error(err);
+    signInPending = false;
+    dom.googleSignInBtn.disabled = false;
     setMessage(dom.loginError, err?.message || '登入失敗。', true);
   }
 });

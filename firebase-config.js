@@ -1,7 +1,11 @@
 // ===================== Firebase Config =====================
+const firebaseAuthDomain = window.location.hostname === "zoo-in.web.app"
+  ? "zoo-in.web.app"
+  : "zoo-in.firebaseapp.com";
+
 const firebaseConfig = {
   apiKey: "__ZOOIN_FIREBASE_KEY__",
-  authDomain: "zoo-in.firebaseapp.com",
+  authDomain: firebaseAuthDomain,
   databaseURL: "https://zoo-in-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "zoo-in",
   storageBucket: "zoo-in.firebasestorage.app",
