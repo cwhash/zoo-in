@@ -35,10 +35,9 @@ jobs:
           node-version: 20
 
       - name: Write Firebase service account
-        run: |
-          cat > "$GOOGLE_APPLICATION_CREDENTIALS" <<'EOF'
-          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZOO_IN }}
-          EOF
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZOO_IN }}
+        run: printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
 
       - name: Install function dependencies
         working-directory: functions
