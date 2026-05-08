@@ -1,0 +1,581 @@
+/* ===================== Zoo-In Design Tokens ===================== */
+:root {
+  color-scheme: light;
+  --bg: #f3f5f2;
+  --surface: #ffffff;
+  --surface-soft: #eef2ed;
+  --text: #15201b;
+  --muted: #607065;
+  --border: #d8dfd8;
+  --primary: #176b5b;
+  --primary-dark: #0f5145;
+  --danger: #b42318;
+  --shadow: 0 14px 30px rgba(22, 36, 29, 0.12);
+  --level-s: #f5d35f;
+  --level-a: #f1bfd8;
+  --level-b: #bad7f2;
+  --level-c: #bde4c7;
+  --level-n: #d9dde1;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Noto Sans TC", "Inter", Arial, sans-serif;
+}
+
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+
+.hidden, [hidden] { display: none !important; }
+
+/* ===================== Layout ===================== */
+.app {
+  width: min(100%, 760px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 12px 12px 28px;
+}
+
+/* ===================== Topbar ===================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  padding: 6px 0 10px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.topbar h1 {
+  margin: 0;
+  text-align: center;
+  font-size: 1.08rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+/* ===================== Buttons ===================== */
+.icon-button, .avatar-button, .close-button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 8px 18px rgba(22, 36, 29, 0.08);
+}
+
+.icon-button {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+.icon-button span {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--text);
+}
+
+.avatar-button { padding: 0; overflow: hidden; }
+
+.google-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.primary-btn, .ghost-btn {
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-weight: 800;
+}
+
+.primary-btn {
+  border: 1px solid var(--primary);
+  color: #fff;
+  background: var(--primary);
+}
+
+.primary-btn:hover { background: var(--primary-dark); }
+
+.ghost-btn {
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.primary-btn:disabled, .ghost-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ===================== Typography ===================== */
+.eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.muted-text, .empty-text {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ===================== Views ===================== */
+.dashboard-view, .life-grid-view { display: grid; gap: 12px; }
+
+/* ===================== Panels ===================== */
+.unlock-panel, .activity-panel, .activity-hero,
+.countdown-section, .grid-section,
+.achievement-panel, .feed-panel, .admin-panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.unlock-panel { display: grid; gap: 10px; padding: 16px; }
+
+.unlock-panel h2, .section-head h2,
+.activity-hero h2, .account-identity h3 { margin: 0; }
+
+.unlock-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.unlock-form input, .profile-form input,
+.task-field input, .task-field textarea,
+.admin-task-row input, .admin-task-row textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.form-message {
+  min-height: 1.1em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.form-message.error, .login-error { color: var(--danger); }
+
+.activity-panel, .achievement-panel, .feed-panel { padding: 16px; }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.activity-cards, .achievement-list, .activity-feed { display: grid; gap: 10px; }
+
+.activity-card, .achievement-item, .feed-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.activity-card h3, .activity-card p,
+.achievement-item h3, .achievement-item p,
+.feed-item p { margin: 0; }
+
+.activity-card { display: grid; gap: 12px; }
+
+.activity-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* ===================== Pills ===================== */
+.small-pill, .progress-pill {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-weight: 900;
+}
+
+.small-pill { min-width: 34px; min-height: 30px; padding: 0 10px; }
+
+.progress-pill { min-width: 104px; min-height: 70px; padding: 8px 14px; }
+.progress-pill span { color: var(--muted); font-size: 0.78rem; }
+
+/* ===================== Activity Hero ===================== */
+.activity-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+}
+
+.countdown-section, .grid-section { padding: 14px; }
+
+.countdown-title, .countdown-value { margin: 0; }
+.countdown-title { color: var(--muted); font-size: 0.82rem; font-weight: 800; }
+.countdown-value { margin-top: 4px; font-weight: 900; }
+
+/* ===================== Grid ===================== */
+.level-legend {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.legend-item {
+  border-radius: 999px;
+  padding: 6px 3px;
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.level-S { background: var(--level-s); }
+.level-A { background: var(--level-a); }
+.level-B { background: var(--level-b); }
+.level-C { background: var(--level-c); }
+.level-N { background: var(--level-n); }
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.task-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(21, 32, 27, 0.18);
+  border-radius: 9px;
+  color: #15201b;
+  font-size: 0.9rem;
+  font-weight: 900;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.task-cell:hover, .task-cell:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(22, 36, 29, 0.14);
+}
+
+.task-cell.completed::after {
+  content: attr(data-completed-date);
+  position: absolute;
+  inset: 17%;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(180, 35, 24, 0.82);
+  border-radius: 999px;
+  color: #8a1f17;
+  font-size: 0.58rem;
+  font-weight: 900;
+  transform: rotate(-16deg);
+  background: rgba(255, 245, 244, 0.72);
+}
+
+.task-cell.locked::before {
+  content: "";
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+/* ===================== Drawers & Task Panel ===================== */
+.side-drawer, .task-panel {
+  position: fixed;
+  top: 0;
+  z-index: 20;
+  width: min(88vw, 390px);
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 14px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: transform 0.22s ease;
+}
+
+.left-drawer { left: 0; transform: translateX(-104%); }
+.right-drawer, .task-panel { right: 0; transform: translateX(104%); }
+.side-drawer.open, .task-panel.open { transform: translateX(0); }
+
+.drawer-header, .task-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-header h2, .task-panel-header h2 { margin: 0; }
+
+.close-button { font-size: 1.35rem; line-height: 1; }
+
+.drawer-nav, .profile-form, .task-panel-body {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.drawer-nav button, .drawer-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 0 12px;
+  text-align: left;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.account-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  min-width: 0;
+}
+
+.profile-avatar {
+  width: 62px;
+  height: 62px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--surface-soft);
+}
+
+.profile-form label, .task-field, .admin-task-row label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.task-panel { gap: 0; }
+
+.task-status {
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.task-field textarea, .admin-task-row textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+/* ===================== Image Crop ===================== */
+.cropper, .crop-controls { display: grid; gap: 10px; }
+
+.crop-frame {
+  position: relative;
+  width: min(100%, 260px);
+  aspect-ratio: 4 / 5;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #111;
+}
+
+.crop-frame img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: none;
+  transform-origin: center;
+  user-select: none;
+  pointer-events: none;
+}
+
+.crop-controls label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.completed-photo {
+  width: min(100%, 220px);
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* ===================== Overlay & Toast ===================== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  background: rgba(8, 16, 12, 0.42);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  z-index: 30;
+  width: min(92vw, 420px);
+  transform: translateX(-50%);
+  border-radius: 10px;
+  background: #13231f;
+  color: #fff;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+  font-weight: 800;
+}
+
+/* ===================== Login ===================== */
+.login-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: min(100%, 320px);
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+}
+
+.brand-mark {
+  width: 86px;
+  height: 86px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.brand-mark svg {
+  width: 44px;
+  height: 44px;
+  stroke: var(--primary);
+  stroke-width: 2.4;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: clamp(2.3rem, 13vw, 4.4rem);
+  letter-spacing: 0.08em;
+}
+
+.google-signin-btn {
+  width: min(100%, 260px);
+  min-height: 48px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 900;
+  box-shadow: var(--shadow);
+}
+
+.login-error {
+  min-height: 1.2em;
+  margin: 0;
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+/* ===================== Admin ===================== */
+.admin-grid { display: grid; gap: 12px; }
+
+.admin-panel { display: grid; gap: 14px; padding: 16px; }
+
+.n-task-editor, .admin-task-row { display: grid; gap: 12px; }
+
+.admin-task-row {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.admin-task-row h3 { margin: 0; }
+
+/* ===================== Responsive ===================== */
+@media (min-width: 760px) {
+  .app { padding: 18px; }
+
+  .dashboard-view {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .unlock-panel { grid-column: 1 / -1; }
+
+  .unlock-form { grid-template-columns: minmax(0, 1fr) 120px; }
+
+  .task-grid { gap: 10px; }
+  .task-cell { font-size: 1rem; }
+
+  .admin-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.7fr);
+    align-items: start;
+  }
+
+  .admin-panel:nth-child(2) { grid-row: span 3; }
+}
