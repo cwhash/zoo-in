@@ -58,6 +58,34 @@ function listenAdmin(ref, event, callback) {
   adminRefs.push({ ref, event, callback });
 }
 
+function ensureActivityCodeEditor() {
+  if (adminDom.activityCodeForm) return;
+
+  const form = document.createElement('form');
+  form.id = 'activityCodeForm';
+  form.className = 'unlock-form';
+  form.innerHTML = `
+    <input id="activityCodeAdminInput" type="text" autocomplete="off" placeholder="活動代碼" />
+    <input id="activityCodeMaxUsesInput" type="number" min="1" max="100000" step="1" placeholder="使用上限" />
+    <button id="saveActivityCodeBtn" class="primary-btn" type="submit">儲存</button>
+  `;
+
+  const message = document.createElement('p');
+  message.id = 'activityCodeMessage';
+  message.className = 'form-message';
+  message.setAttribute('aria-live', 'polite');
+
+  adminDom.codeUsage.before(form);
+  adminDom.codeUsage.after(message);
+
+  adminDom.activityCodeForm = form;
+  adminDom.activityCodeAdminInput = form.querySelector('#activityCodeAdminInput');
+  adminDom.activityCodeMaxUsesInput = form.querySelector('#activityCodeMaxUsesInput');
+  adminDom.saveActivityCodeBtn = form.querySelector('#saveActivityCodeBtn');
+  adminDom.activityCodeMessage = message;
+  form.addEventListener('submit', saveActivityCode);
+}
+
 async function isAdmin(uid) {
   const snapshot = await db.ref(`admins/${uid}`).once('value');
   return snapshot.val() === true;
@@ -106,13 +134,40 @@ async function saveNTask(taskId) {
   }
 }
 
+async function saveActivityCode(event) {
+  event.preventDefault();
+  const code = adminDom.activityCodeAdminInput.value.trim();
+  const maxUses = Number(adminDom.activityCodeMaxUsesInput.value || 999);
+  if (!code) {
+    setAdminMessage(adminDom.activityCodeMessage, '請輸入活動代碼。', true);
+    return;
+  }
+
+  adminDom.saveActivityCodeBtn.disabled = true;
+  setAdminMessage(adminDom.activityCodeMessage, '儲存中...');
+  try {
+    const callUpdate = functions.httpsCallable('adminUpdateActivityCode');
+    await callUpdate({ code, maxUses });
+    setAdminMessage(adminDom.activityCodeMessage, '活動代碼已更新。');
+    showAdminToast('活動代碼已更新。');
+  } catch (err) {
+    console.error(err);
+    setAdminMessage(adminDom.activityCodeMessage, err?.message || '活動代碼更新失敗。', true);
+  } finally {
+    adminDom.saveActivityCodeBtn.disabled = false;
+  }
+}
+
 function attachAdminData() {
   detachAdminListeners();
+  ensureActivityCodeEditor();
 
   listenAdmin(db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`), 'value', (snapshot) => {
     const code = snapshot.val() || {};
     const used = Number(code.used_count || 0);
     const max = Number(code.max_uses || 999);
+    adminDom.activityCodeAdminInput.value = code.code || '';
+    adminDom.activityCodeMaxUsesInput.value = max;
     adminDom.codeUsage.textContent = `使用次數：${used} / ${max}`;
   });
 

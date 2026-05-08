@@ -8,7 +8,6 @@ const bucket = admin.storage().bucket();
 
 const REGION = 'asia-southeast1';
 const LIFE_GRID_ACTIVITY_ID = 'life_grid_2027';
-const LIFE_GRID_CODE = '2027-LIFE-GRID';
 const LIFE_GRID_START_AT = new Date('2026-07-01T00:00:00+08:00').getTime();
 const LIFE_GRID_END_AT = new Date('2028-01-01T00:00:00+08:00').getTime();
 const CODE_MAX_USES = 999;
@@ -90,6 +89,20 @@ function getTaipeiDateKey(time = Date.now()) {
 
 function normalizeCode(code) {
   return String(code || '').trim().toUpperCase();
+}
+
+async function getActivityCodeConfig() {
+  const snapshot = await db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`).once('value');
+  const data = snapshot.val() || {};
+  const code = normalizeCode(data.code);
+  if (!code) {
+    throw new functions.https.HttpsError('failed-precondition', '活動代碼尚未設定。');
+  }
+
+  return {
+    code,
+    maxUses: Number(data.max_uses || CODE_MAX_USES),
+  };
 }
 
 function normalizeNickName(value) {
@@ -189,22 +202,22 @@ async function recordAttempt(uid, isCorrect) {
   await ref.set(next);
 }
 
-async function incrementActivityCodeUse() {
+async function incrementActivityCodeUse(codeConfig) {
   const codeRef = db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`);
   const result = await codeRef.transaction((current) => {
     const data = current || {
-      code: LIFE_GRID_CODE,
+      code: codeConfig.code,
       activity_id: LIFE_GRID_ACTIVITY_ID,
-      max_uses: CODE_MAX_USES,
+      max_uses: codeConfig.maxUses || CODE_MAX_USES,
       used_count: 0,
       created_at: Date.now(),
     };
-    if ((data.used_count || 0) >= (data.max_uses || CODE_MAX_USES)) return;
+    const maxUses = Number(data.max_uses || codeConfig.maxUses || CODE_MAX_USES);
+    if ((data.used_count || 0) >= maxUses) return;
     return {
       ...data,
-      code: LIFE_GRID_CODE,
       activity_id: LIFE_GRID_ACTIVITY_ID,
-      max_uses: data.max_uses || CODE_MAX_USES,
+      max_uses: maxUses,
       used_count: (data.used_count || 0) + 1,
       updated_at: Date.now(),
     };
@@ -218,7 +231,8 @@ async function incrementActivityCodeUse() {
 exports.unlockActivity = functions.region(REGION).https.onCall(async (data, context) => {
   const uid = assertAuth(context);
   const submittedCode = normalizeCode(data?.code);
-  const isCorrect = submittedCode === LIFE_GRID_CODE;
+  const codeConfig = await getActivityCodeConfig();
+  const isCorrect = submittedCode === codeConfig.code;
   await recordAttempt(uid, isCorrect);
 
   if (!isCorrect) {
@@ -240,14 +254,14 @@ exports.unlockActivity = functions.region(REGION).https.onCall(async (data, cont
     };
   }
 
-  await incrementActivityCodeUse();
+  await incrementActivityCodeUse(codeConfig);
   await ensureProfile(uid);
   const time = Date.now();
   await db.ref().update({
     [`users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`]: {
       activity_id: LIFE_GRID_ACTIVITY_ID,
       unlocked_at: time,
-      code: LIFE_GRID_CODE,
+      code_id: LIFE_GRID_ACTIVITY_ID,
     },
     [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/joined_at`]: time,
     [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/updated_at`]: time,
@@ -411,6 +425,44 @@ exports.completeTask = functions.region(REGION).https.onCall(async (data, contex
 
   const unlockedAchievements = await evaluateAchievements(uid, activity, taskId);
   return { completed: true, unlockedAchievements };
+});
+
+exports.adminUpdateActivityCode = functions.region(REGION).https.onCall(async (data, context) => {
+  const uid = assertAuth(context);
+  await assertAdmin(uid);
+
+  const code = normalizeCode(data?.code);
+  if (!code) {
+    throw new functions.https.HttpsError('invalid-argument', '請輸入活動代碼。');
+  }
+
+  const maxUses = Number(data?.maxUses || CODE_MAX_USES);
+  if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100000) {
+    throw new functions.https.HttpsError('invalid-argument', '使用次數上限必須介於 1 到 100000。');
+  }
+
+  const codeRef = db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`);
+  const snapshot = await codeRef.once('value');
+  const existing = snapshot.val() || {};
+  const usedCount = Number(existing.used_count || 0);
+  if (maxUses < usedCount) {
+    throw new functions.https.HttpsError('failed-precondition', '使用次數上限不能小於目前使用次數。');
+  }
+
+  await codeRef.update({
+    activity_id: LIFE_GRID_ACTIVITY_ID,
+    code,
+    max_uses: maxUses,
+    used_count: usedCount,
+    created_at: existing.created_at || Date.now(),
+    updated_at: Date.now(),
+  });
+
+  return {
+    activityId: LIFE_GRID_ACTIVITY_ID,
+    maxUses,
+    usedCount,
+  };
 });
 
 exports.adminUpdateNTask = functions.region(REGION).https.onCall(async (data, context) => {

@@ -18,7 +18,7 @@ Zoo-In is a Firebase-based activity platform. Users sign in with Google, manage 
 
 ## Life Grid 2027 Rules
 
-- Activity code: `2027-LIFE-GRID`, case-insensitive.
+- Activity code is configured in the admin backend and is case-insensitive.
 - Activity period: July 1, 2026 to December 31, 2027.
 - Users can unlock the activity before the start date, but task editing and completion remain locked until the activity opens.
 - After the activity ends, users can only view records.
