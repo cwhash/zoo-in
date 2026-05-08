@@ -8,10 +8,10 @@ Zoo-In is a Firebase-based activity platform. Users sign in with Google, manage 
 
 - Google sign-in through Firebase Authentication.
 - Zoo-In member home after login.
-- Public nickname stored in Zoo-In profile. Google display name and avatar are shown only to the signed-in user.
-- Activity unlock by Cloud Functions.
+- Public nickname stored in the Zoo-In profile. Google display name and avatar are shown only to the signed-in user.
+- Activity unlock through a Spark/free-plan Realtime Database hash lookup.
 - Life Grid 2027 as the first activity.
-- Life Grid task completion requires a 4:5 photo upload to Firebase Storage.
+- Life Grid task completion requires a cropped 4:5 JPEG photo upload to Firebase Storage.
 - Life Grid has hidden, activity-specific achievements.
 - Life Grid activity page shows the latest 10 public feed events.
 - Separate `admin.html` page for admin tasks.
@@ -58,17 +58,18 @@ Storage path for task photos:
 submissions/{activity_id}/{uid}/{task_id}.jpg
 ```
 
-## Cloud Functions
+## Functions Status
 
-The Functions project lives in `functions/`. The Spark/free deployment path does not deploy Functions; existing callable Functions are isolated behind frontend adapters where legacy behavior still depends on them.
+The Spark/free deployment path does not deploy Cloud Functions. The `functions/` directory is retained as legacy callable source for reference.
 
-Callable functions:
+Current frontend code still calls existing callable Functions through `js/activities/life-grid/functions-adapter.js` for task completion and some admin operations:
 
-- `unlockActivity`: legacy callable; the current free-plan unlock flow validates hashed activity codes in Realtime Database from the frontend.
-- `completeTask`: verifies unlock state and uploaded photo, completes the task, writes the public feed, and unlocks achievements.
-- `adminUpdateNTask`: lets admins edit official N tasks.
-- `adminResetTaskCompletion`: lets admins cancel a user's task completion and re-check achievements.
-- `adminDeleteUserData`: deletes a user's Zoo-In data, submissions, photos, feed entries, and achievements while leaving Firebase Auth intact.
+- `completeTask`
+- `adminUpdateNTask`
+- `adminResetTaskCompletion`
+- `adminDeleteUserData`
+
+Activity code unlock no longer uses the legacy `unlockActivity` callable. The current free-plan unlock flow hashes the submitted code in the browser and looks up `activity_code_hashes/{code_hash}` in Realtime Database.
 
 ## Run Locally
 
@@ -82,10 +83,19 @@ For Google sign-in, add `localhost` in Firebase Authentication authorized domain
 
 ## Deploy
 
-Install Firebase CLI and deploy:
+Deployment is handled by GitHub Actions:
+
+- GitHub Pages publishes the static frontend.
+- Firebase Hosting publishes the same static frontend.
+- Firebase Database Rules deploys `database.rules.json`.
+
+The Spark/free path intentionally does not deploy Cloud Functions. Avoid running a full `firebase deploy` unless the deployment target is explicit.
+
+Useful targeted commands:
 
 ```bash
-firebase deploy
+firebase deploy --only hosting
+firebase deploy --only database
 ```
 
 The first admin must be added manually in Realtime Database:
@@ -107,4 +117,4 @@ admins/{uid}: true
 - `js/activities/life-grid/`: Life Grid activity config and adapters.
 - `database.rules.json`: Realtime Database rules.
 - `storage.rules`: Firebase Storage rules.
-- `functions/index.js`: Cloud Functions.
+- `functions/index.js`: legacy Cloud Functions source, not deployed by the Spark/free workflow.

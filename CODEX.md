@@ -14,7 +14,8 @@ This document defines development notes for the Zoo-In project.
 - Life Grid is one activity inside Zoo-In, currently keyed as `life_grid_2027`.
 - Users land on the Zoo-In activity center after Google sign-in.
 - Locked activities should not appear on the user home page.
-- Activity unlock and task completion should be handled through Cloud Functions, not direct client-only trust.
+- Activity unlock currently uses the Spark/free Realtime Database hash lookup flow.
+- Task completion and destructive admin actions still depend on legacy callable Functions through frontend adapters.
 - Photos belong in Firebase Storage. Realtime Database stores only metadata and paths.
 
 ## Life Grid Rules
@@ -37,7 +38,7 @@ This document defines development notes for the Zoo-In project.
 - `script.js` and `admin.js` are thin compatibility entrypoints.
 - `js/shared/` contains shared Firebase and activity-code helpers.
 - `js/activities/life-grid/` contains Life Grid config and adapters.
-- `functions/` contains Firebase Cloud Functions.
+- `functions/` contains legacy Firebase Cloud Functions source. The Spark/free workflow does not deploy it.
 - `database.rules.json` and `storage.rules` define Firebase security rules.
 
 ## Quality Checks
@@ -46,6 +47,7 @@ This document defines development notes for the Zoo-In project.
 - Run `node --check admin.js`.
 - Run `node --check js/platform/app.js`.
 - Run `node --check js/admin/app.js`.
-- Run `node --check functions/index.js`.
+- Run `node --check functions/index.js` for legacy source syntax only.
 - Validate JSON files after edits.
+- Keep README files aligned with GitHub Actions deployment behavior.
 - For UI changes, test both the activity center and Life Grid view on mobile-width screens.
