@@ -41,8 +41,12 @@ users/{uid}/profile
 users/{uid}/activity_unlocks/{activity_id}
 users/{uid}/activities/{activity_id}/tasks/{task_id}
 users/{uid}/achievements/{activity_id}/{achievement_id}
+activity_registry/{activity_id}
+activity_data/{activity_id}
 activities/{activity_id}
-activity_codes/{activity_id}
+activity_code_hashes/{code_hash}
+activity_join_counters/{activity_id}
+activity_codes/{activity_id} (legacy/admin only)
 activity_feeds/{activity_id}/{feed_id}
 submissions/{activity_id}/{uid}/{task_id}
 admins/{uid}
@@ -56,11 +60,11 @@ submissions/{activity_id}/{uid}/{task_id}.jpg
 
 ## Cloud Functions
 
-The Functions project lives in `functions/`.
+The Functions project lives in `functions/`. The Spark/free deployment path does not deploy Functions; existing callable Functions are isolated behind frontend adapters where legacy behavior still depends on them.
 
 Callable functions:
 
-- `unlockActivity`: validates the activity code, cooldown, usage limit, and writes unlock data.
+- `unlockActivity`: legacy callable; the current free-plan unlock flow validates hashed activity codes in Realtime Database from the frontend.
 - `completeTask`: verifies unlock state and uploaded photo, completes the task, writes the public feed, and unlocks achievements.
 - `adminUpdateNTask`: lets admins edit official N tasks.
 - `adminResetTaskCompletion`: lets admins cancel a user's task completion and re-check achievements.
@@ -92,11 +96,15 @@ admins/{uid}: true
 
 ## File Guide
 
-- `index.html`: user-facing Zoo-In and Life Grid UI.
-- `admin.html`: separate admin UI.
+- `index.html`: user-facing Zoo-In platform shell.
+- `admin.html`: separate admin shell.
 - `styles.css`: shared frontend styles.
-- `script.js`: user-facing app behavior.
-- `admin.js`: admin page behavior.
+- `script.js`: compatibility entrypoint for the platform module.
+- `admin.js`: compatibility entrypoint for the admin module.
+- `js/shared/`: shared Firebase and activity-code utilities.
+- `js/platform/`: user-facing platform entrypoint.
+- `js/admin/`: admin entrypoint.
+- `js/activities/life-grid/`: Life Grid activity config and adapters.
 - `database.rules.json`: Realtime Database rules.
 - `storage.rules`: Firebase Storage rules.
 - `functions/index.js`: Cloud Functions.

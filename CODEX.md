@@ -32,8 +32,11 @@ This document defines development notes for the Zoo-In project.
 
 ## Code Organization
 
-- `index.html`, `script.js`, and `styles.css` implement the user-facing app.
-- `admin.html` and `admin.js` implement the separate admin UI.
+- `index.html` loads the user-facing platform module from `js/platform/app.js`.
+- `admin.html` loads the separate admin module from `js/admin/app.js`.
+- `script.js` and `admin.js` are thin compatibility entrypoints.
+- `js/shared/` contains shared Firebase and activity-code helpers.
+- `js/activities/life-grid/` contains Life Grid config and adapters.
 - `functions/` contains Firebase Cloud Functions.
 - `database.rules.json` and `storage.rules` define Firebase security rules.
 
@@ -41,6 +44,8 @@ This document defines development notes for the Zoo-In project.
 
 - Run `node --check script.js`.
 - Run `node --check admin.js`.
+- Run `node --check js/platform/app.js`.
+- Run `node --check js/admin/app.js`.
 - Run `node --check functions/index.js`.
 - Validate JSON files after edits.
 - For UI changes, test both the activity center and Life Grid view on mobile-width screens.

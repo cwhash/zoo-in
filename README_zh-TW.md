@@ -41,8 +41,12 @@ users/{uid}/profile
 users/{uid}/activity_unlocks/{activity_id}
 users/{uid}/activities/{activity_id}/tasks/{task_id}
 users/{uid}/achievements/{activity_id}/{achievement_id}
+activity_registry/{activity_id}
+activity_data/{activity_id}
 activities/{activity_id}
-activity_codes/{activity_id}
+activity_code_hashes/{code_hash}
+activity_join_counters/{activity_id}
+activity_codes/{activity_id} (legacy/admin only)
 activity_feeds/{activity_id}/{feed_id}
 submissions/{activity_id}/{uid}/{task_id}
 admins/{uid}
