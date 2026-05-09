@@ -31,7 +31,7 @@ jobs:
           cache-dependency-path: client/package-lock.json
 
       - name: Replace API Key
-        run: sed -i 's/__ZOOIN_FIREBASE_KEY__/${{ secrets.ZOOIN_FIREBASE_KEY }}/g' client/.env.production
+        run: sed -i 's/__FIREBASE_WEB_API_KEY__/${{ secrets.FIREBASE_WEB_API_KEY }}/g' client/.env.production
 
       - name: Install dependencies
         working-directory: client
