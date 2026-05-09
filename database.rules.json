@@ -36,7 +36,6 @@
       ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       ".indexOn": ["activity_id", "updated_at"],
       "$code_hash": {
-        ".read": "auth != null",
         ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
         "activity_id": {
           ".validate": "newData.isString()"
@@ -51,7 +50,7 @@
           ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999"
         },
         "used_count": {
-          ".write": "auth != null && newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1)) && newData.val() <= root.child('activity_code_hashes').child($code_hash).child('max_uses').val()"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999"
         },
         "created_at": {
           ".validate": "newData.isNumber()"
@@ -64,7 +63,7 @@
     "activity_join_counters": {
       "$activity_id": {
         ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
-        ".write": "auth != null && newData.child('activity_id').val() === $activity_id && newData.child('joined_count').isNumber() && ((!data.child('joined_count').exists() && newData.child('joined_count').val() === 1) || (data.child('joined_count').exists() && newData.child('joined_count').val() === data.child('joined_count').val() + 1)) && newData.child('joined_count').val() <= 999",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
         ".validate": "newData.hasChildren(['activity_id', 'joined_count', 'updated_at']) && newData.child('activity_id').val() === $activity_id && newData.child('joined_count').isNumber() && newData.child('joined_count').val() <= 999 && newData.child('updated_at').isNumber()"
       }
     },
@@ -130,7 +129,7 @@
         },
         "activity_unlocks": {
           "$activity_id": {
-            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.child('activity_id').val() === $activity_id && root.child('activity_code_hashes').child(newData.child('code_hash').val()).child('active').val() === true && root.child('activity_code_hashes').child(newData.child('code_hash').val()).child('activity_id').val() === $activity_id && root.child('activity_code_hashes').child(newData.child('code_hash').val()).child('used_count').val() <= root.child('activity_code_hashes').child(newData.child('code_hash').val()).child('max_uses').val()",
+            ".write": false,
             ".validate": "newData.hasChildren(['activity_id', 'unlocked_at', 'code_hash']) && newData.child('activity_id').isString() && newData.child('unlocked_at').isNumber() && newData.child('code_hash').isString()"
           }
         },

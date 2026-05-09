@@ -15,8 +15,8 @@ This document defines development notes for the Zoo-In project.
 - The production frontend is the Vue app in `client/`, deployed to Firebase Hosting.
 - Users land on the Zoo-In activity center after Google sign-in.
 - Locked activities should not appear on the user home page.
-- Activity unlock currently uses the Spark/free Realtime Database hash lookup flow.
-- Task completion and destructive admin actions still depend on legacy callable Functions through frontend adapters.
+- Activity unlock is handled by the `unlockActivity` callable Function.
+- Task completion, achievements, feed writes, activity code management, and destructive admin actions are handled by callable Functions.
 - Photos belong in Firebase Storage. Realtime Database stores only metadata and paths.
 
 ## Life Grid Rules
@@ -38,13 +38,13 @@ This document defines development notes for the Zoo-In project.
 - `client/src/router/` defines routes, including `/admin`.
 - `client/src/stores/` contains Firebase-backed app state.
 - `client/src/components/` contains shared shell and Life Grid UI.
-- `functions/` contains legacy Firebase Cloud Functions source. The Spark/free workflow does not deploy it.
+- `functions/` contains the Firebase Cloud Functions backend. Functions deploy to `asia-southeast1` with `maxInstances: 3`.
 - `database.rules.json` and `storage.rules` define Firebase security rules.
 
 ## Quality Checks
 
 - Run `npm run build` in `client/`.
-- Run `node --check functions/index.js` for legacy source syntax only.
+- Run `node --check functions/index.js`.
 - Validate JSON files after edits.
 - Keep README files aligned with GitHub Actions deployment behavior.
 - For UI changes, test both the activity center and Life Grid view on mobile-width screens.

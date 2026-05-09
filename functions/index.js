@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 const crypto = require('crypto');
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 
 admin.initializeApp();
 
@@ -15,6 +15,10 @@ const CODE_MAX_USES = 999;
 const NORMAL_COOLDOWN_MS = 5000;
 const LOCKED_COOLDOWN_MS = 10 * 60 * 1000;
 const DAILY_WRONG_LIMIT = 10;
+
+const callableRuntime = functions.region(REGION).runWith({
+  maxInstances: 3,
+});
 
 const GRID_SEQUENCE = [
   'A1', 'N1', 'C1', 'N2', 'N3',
@@ -34,8 +38,8 @@ const TASK_LIST_SEQUENCE = [
 
 const DEFAULT_ACHIEVEMENTS = {
   first_task_completed: {
-    title: '萬丈高樓平地起',
-    description: '傳奇的開始！',
+    title: '第一個任務完成',
+    description: '完成 Life Grid 的第一個任務。',
     hidden: true,
     condition: {
       type: 'completed_task_count',
@@ -57,9 +61,13 @@ const DEFAULT_TASKS = Object.fromEntries(TASK_LIST_SEQUENCE.map((taskId) => {
   }];
 }));
 
+function httpsError(code, message) {
+  return new functions.https.HttpsError(code, message);
+}
+
 function assertAuth(context) {
   if (!context.auth?.uid) {
-    throw new functions.https.HttpsError('unauthenticated', '請先登入。');
+    throw httpsError('unauthenticated', '請先登入。');
   }
   return context.auth.uid;
 }
@@ -67,7 +75,7 @@ function assertAuth(context) {
 async function assertAdmin(uid) {
   const snapshot = await db.ref(`admins/${uid}`).once('value');
   if (snapshot.val() !== true) {
-    throw new functions.https.HttpsError('permission-denied', '需要管理員權限。');
+    throw httpsError('permission-denied', '你沒有管理員權限。');
   }
 }
 
@@ -96,27 +104,24 @@ function hashCode(code) {
   return crypto.createHash('sha256').update(normalizeCode(code)).digest('hex');
 }
 
-async function getActivityCodeConfig() {
-  const snapshot = await db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`).once('value');
-  const data = snapshot.val() || {};
-  const codeHash = String(data.code_hash || '');
-  if (!codeHash) {
-    throw new functions.https.HttpsError('failed-precondition', '活動代碼尚未設定。');
-  }
-
-  return {
-    codeHash,
-    maxUses: Number(data.max_uses || CODE_MAX_USES),
-  };
-}
-
 function normalizeNickName(value) {
   const text = String(value || '').trim();
-  return Array.from(text || '匿名').slice(0, 10).join('');
+  return Array.from(text || '玩家').slice(0, 10).join('');
 }
 
 function sanitizeText(value, maxLength) {
   return Array.from(String(value || '').trim()).slice(0, maxLength).join('');
+}
+
+function getDefaultUserTasks() {
+  const now = Date.now();
+  return Object.fromEntries(TASK_LIST_SEQUENCE.map((taskId) => [taskId, {
+    task_id: taskId,
+    level: taskId[0],
+    status: 'open',
+    created_at: now,
+    updated_at: now,
+  }]));
 }
 
 async function ensureActivityConfig() {
@@ -145,17 +150,18 @@ async function ensureActivityConfig() {
   if (!snapshot.exists()) {
     await activityRef.set(next);
   }
-  return next;
-}
 
-function getDefaultUserTasks() {
-  return Object.fromEntries(TASK_LIST_SEQUENCE.map((taskId) => [taskId, {
-    task_id: taskId,
-    level: taskId[0],
-    status: 'open',
-    created_at: Date.now(),
+  await db.ref(`activity_registry/${LIFE_GRID_ACTIVITY_ID}`).update({
+    activity_id: LIFE_GRID_ACTIVITY_ID,
+    name: next.name,
+    type: next.type,
+    status: next.status,
+    start_at: next.start_at,
+    end_at: next.end_at,
     updated_at: Date.now(),
-  }]));
+  });
+
+  return next;
 }
 
 async function ensureProfile(uid) {
@@ -165,7 +171,7 @@ async function ensureProfile(uid) {
 
   const profile = {
     public: {
-      nick_name: '匿名',
+      nick_name: '玩家',
     },
     private: {
       real_name: '',
@@ -191,62 +197,93 @@ async function recordAttempt(uid, isCorrect) {
 
   if (lastAttemptAt && time - lastAttemptAt < cooldown) {
     const waitSeconds = Math.ceil((cooldown - (time - lastAttemptAt)) / 1000);
-    throw new functions.https.HttpsError(
+    throw httpsError(
       'resource-exhausted',
       wrongCount >= DAILY_WRONG_LIMIT
-        ? `今日錯誤次數過多，請 ${waitSeconds} 秒後再試。`
+        ? `今天錯誤次數過多，請 ${waitSeconds} 秒後再試。`
         : `請 ${waitSeconds} 秒後再試。`,
     );
   }
 
-  const next = {
+  await ref.set({
     last_attempt_at: time,
     wrong_count: isCorrect ? 0 : wrongCount + 1,
     updated_at: time,
-  };
-  await ref.set(next);
+  });
 }
 
-async function incrementActivityCodeUse(codeConfig) {
-  const codeRef = db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`);
+async function getCodeRecordByHash(codeHash) {
+  const snapshot = await db.ref(`activity_code_hashes/${codeHash}`).once('value');
+  if (!snapshot.exists()) return null;
+  const record = snapshot.val() || {};
+  if (record.code_hash && record.code_hash !== codeHash) return null;
+  if (record.active === false) return null;
+  if (record.activity_id !== LIFE_GRID_ACTIVITY_ID) return null;
+  return {
+    ...record,
+    code_hash: codeHash,
+    max_uses: Number(record.max_uses || CODE_MAX_USES),
+    used_count: Number(record.used_count || 0),
+  };
+}
+
+async function incrementActivityCodeUse(codeHash, maxUses) {
+  const codeRef = db.ref(`activity_code_hashes/${codeHash}`);
   const result = await codeRef.transaction((current) => {
-    const data = current || {
-      code_hash: codeConfig.codeHash,
-      activity_id: LIFE_GRID_ACTIVITY_ID,
-      max_uses: codeConfig.maxUses || CODE_MAX_USES,
-      used_count: 0,
-      created_at: Date.now(),
-    };
-    const maxUses = Number(data.max_uses || codeConfig.maxUses || CODE_MAX_USES);
-    if ((data.used_count || 0) >= maxUses) return;
+    if (!current || current.active === false || current.activity_id !== LIFE_GRID_ACTIVITY_ID) return;
+    const limit = Number(current.max_uses || maxUses || CODE_MAX_USES);
+    const used = Number(current.used_count || 0);
+    if (used >= limit || used >= CODE_MAX_USES) return;
     return {
-      ...data,
-      activity_id: LIFE_GRID_ACTIVITY_ID,
-      max_uses: maxUses,
-      used_count: (data.used_count || 0) + 1,
+      ...current,
+      code_hash: codeHash,
+      max_uses: limit,
+      used_count: used + 1,
       updated_at: Date.now(),
     };
   });
 
   if (!result.committed) {
-    throw new functions.https.HttpsError('resource-exhausted', '活動代碼使用次數已滿。');
+    throw httpsError('resource-exhausted', '活動代碼使用人數已達上限。');
   }
 }
 
-exports.unlockActivity = functions.region(REGION).https.onCall(async (data, context) => {
+async function incrementJoinCounter() {
+  const counterRef = db.ref(`activity_join_counters/${LIFE_GRID_ACTIVITY_ID}`);
+  const result = await counterRef.transaction((current) => {
+    const data = current || {};
+    const joinedCount = Number(data.joined_count || 0);
+    if (joinedCount >= CODE_MAX_USES) return;
+    return {
+      activity_id: LIFE_GRID_ACTIVITY_ID,
+      joined_count: joinedCount + 1,
+      updated_at: Date.now(),
+    };
+  });
+
+  if (!result.committed) {
+    throw httpsError('resource-exhausted', 'Life Grid 參加人數已達上限。');
+  }
+}
+
+exports.unlockActivity = callableRuntime.https.onCall(async (data, context) => {
   const uid = assertAuth(context);
   const submittedCode = normalizeCode(data?.code);
-  const codeConfig = await getActivityCodeConfig();
-  const isCorrect = hashCode(submittedCode) === codeConfig.codeHash;
-  await recordAttempt(uid, isCorrect);
+  if (!submittedCode) {
+    throw httpsError('invalid-argument', '請輸入活動代碼。');
+  }
 
-  if (!isCorrect) {
-    throw new functions.https.HttpsError('invalid-argument', '活動代碼不正確。');
+  const submittedHash = hashCode(submittedCode);
+  const codeRecord = await getCodeRecordByHash(submittedHash);
+  await recordAttempt(uid, Boolean(codeRecord));
+
+  if (!codeRecord) {
+    throw httpsError('invalid-argument', '活動代碼不正確或已停用。');
   }
 
   const activity = await ensureActivityConfig();
   if (activity.status !== 'active' || !canUnlockActivity()) {
-    throw new functions.https.HttpsError('failed-precondition', '活動目前不可解鎖。');
+    throw httpsError('failed-precondition', '活動目前不能解鎖。');
   }
 
   const unlockRef = db.ref(`users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`);
@@ -259,14 +296,16 @@ exports.unlockActivity = functions.region(REGION).https.onCall(async (data, cont
     };
   }
 
-  await incrementActivityCodeUse(codeConfig);
+  await incrementActivityCodeUse(submittedHash, codeRecord.max_uses);
+  await incrementJoinCounter();
   await ensureProfile(uid);
+
   const time = Date.now();
   await db.ref().update({
     [`users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`]: {
       activity_id: LIFE_GRID_ACTIVITY_ID,
       unlocked_at: time,
-      code_hash: codeConfig.codeHash,
+      code_hash: submittedHash,
     },
     [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/joined_at`]: time,
     [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/updated_at`]: time,
@@ -356,30 +395,30 @@ async function evaluateAchievements(uid, activity, sourceTaskId) {
   return unlocked;
 }
 
-exports.completeTask = functions.region(REGION).https.onCall(async (data, context) => {
+exports.completeTask = callableRuntime.https.onCall(async (data, context) => {
   const uid = assertAuth(context);
   const activityId = String(data?.activityId || '');
   const taskId = String(data?.taskId || '');
   const imagePath = String(data?.imagePath || '');
 
   if (activityId !== LIFE_GRID_ACTIVITY_ID || !TASK_LIST_SEQUENCE.includes(taskId)) {
-    throw new functions.https.HttpsError('invalid-argument', '活動或任務不存在。');
+    throw httpsError('invalid-argument', '活動或任務不正確。');
   }
   if (!isActivityOpen()) {
-    throw new functions.https.HttpsError('failed-precondition', '活動已結束，目前只能查看。');
+    throw httpsError('failed-precondition', '活動尚未開始或已結束。');
   }
   if (imagePath !== `submissions/${LIFE_GRID_ACTIVITY_ID}/${uid}/${taskId}.jpg`) {
-    throw new functions.https.HttpsError('invalid-argument', '照片路徑不正確。');
+    throw httpsError('invalid-argument', '照片路徑不正確。');
   }
 
   const unlockSnapshot = await db.ref(`users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`).once('value');
   if (!unlockSnapshot.exists()) {
-    throw new functions.https.HttpsError('failed-precondition', '尚未解鎖活動。');
+    throw httpsError('failed-precondition', '請先解鎖活動。');
   }
 
   const [exists] = await bucket.file(imagePath).exists();
   if (!exists) {
-    throw new functions.https.HttpsError('failed-precondition', '完成任務需要先上傳照片。');
+    throw httpsError('failed-precondition', '找不到任務照片，請重新上傳。');
   }
 
   const activity = await ensureActivityConfig();
@@ -388,10 +427,10 @@ exports.completeTask = functions.region(REGION).https.onCall(async (data, contex
   const userTask = taskSnapshot.val() || {};
 
   if (userTask.status === 'completed') {
-    throw new functions.https.HttpsError('already-exists', '任務已完成。');
+    throw httpsError('already-exists', '任務已完成。');
   }
   if (taskId[0] !== 'N' && !userTask.locked_at) {
-    throw new functions.https.HttpsError('failed-precondition', '請先填寫並鎖定任務內容。');
+    throw httpsError('failed-precondition', '請先保存任務規劃再完成任務。');
   }
 
   const time = Date.now();
@@ -432,57 +471,77 @@ exports.completeTask = functions.region(REGION).https.onCall(async (data, contex
   return { completed: true, unlockedAchievements };
 });
 
-exports.adminUpdateActivityCode = functions.region(REGION).https.onCall(async (data, context) => {
+exports.adminUpdateActivityCode = callableRuntime.https.onCall(async (data, context) => {
   const uid = assertAuth(context);
   await assertAdmin(uid);
 
   const code = normalizeCode(data?.code);
   if (!code) {
-    throw new functions.https.HttpsError('invalid-argument', '請輸入活動代碼。');
+    throw httpsError('invalid-argument', '請輸入活動代碼。');
   }
 
   const maxUses = Number(data?.maxUses || CODE_MAX_USES);
-  if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100000) {
-    throw new functions.https.HttpsError('invalid-argument', '使用次數上限必須介於 1 到 100000。');
+  if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > CODE_MAX_USES) {
+    throw httpsError('invalid-argument', `使用人數上限必須介於 1 到 ${CODE_MAX_USES}。`);
   }
 
-  const codeRef = db.ref(`activity_codes/${LIFE_GRID_ACTIVITY_ID}`);
-  const snapshot = await codeRef.once('value');
-  const existing = snapshot.val() || {};
+  await ensureActivityConfig();
+  const codeHash = hashCode(code);
+  const now = Date.now();
+  const existingSnapshot = await db.ref(`activity_code_hashes/${codeHash}`).once('value');
+  const existing = existingSnapshot.val() || {};
   const usedCount = Number(existing.used_count || 0);
   if (maxUses < usedCount) {
-    throw new functions.https.HttpsError('failed-precondition', '使用次數上限不能小於目前使用次數。');
+    throw httpsError('failed-precondition', '使用人數上限不能小於目前已使用次數。');
   }
 
-  await codeRef.update({
+  const updates = {};
+  const codeListSnapshot = await db.ref('activity_code_hashes')
+    .orderByChild('activity_id')
+    .equalTo(LIFE_GRID_ACTIVITY_ID)
+    .once('value');
+  codeListSnapshot.forEach((child) => {
+    if (child.key !== codeHash) {
+      updates[`activity_code_hashes/${child.key}/active`] = false;
+      updates[`activity_code_hashes/${child.key}/updated_at`] = now;
+    }
+  });
+
+  updates[`activity_code_hashes/${codeHash}`] = {
     activity_id: LIFE_GRID_ACTIVITY_ID,
-    code_hash: hashCode(code),
+    code_hash: codeHash,
+    active: true,
     max_uses: maxUses,
     used_count: usedCount,
-    created_at: existing.created_at || Date.now(),
-    updated_at: Date.now(),
-  });
+    created_at: existing.created_at || now,
+    updated_at: now,
+  };
+  updates[`activity_registry/${LIFE_GRID_ACTIVITY_ID}/max_uses`] = maxUses;
+  updates[`activity_registry/${LIFE_GRID_ACTIVITY_ID}/updated_at`] = now;
+
+  await db.ref().update(updates);
 
   return {
     activityId: LIFE_GRID_ACTIVITY_ID,
+    codeHash,
     maxUses,
     usedCount,
   };
 });
 
-exports.adminUpdateNTask = functions.region(REGION).https.onCall(async (data, context) => {
+exports.adminUpdateNTask = callableRuntime.https.onCall(async (data, context) => {
   const uid = assertAuth(context);
   await assertAdmin(uid);
 
-  const taskId = String(data?.taskId || '');
+  const taskId = String(data?.taskId || '').toUpperCase();
   if (!/^N\d+$/.test(taskId) || !TASK_LIST_SEQUENCE.includes(taskId)) {
-    throw new functions.https.HttpsError('invalid-argument', '只能編輯 N 任務。');
+    throw httpsError('invalid-argument', '只能編輯 N 任務。');
   }
 
   const title = sanitizeText(data?.title, 60);
   const description = sanitizeText(data?.description, 300);
   if (!title) {
-    throw new functions.https.HttpsError('invalid-argument', 'N 任務標題必填。');
+    throw httpsError('invalid-argument', 'N 任務標題不能空白。');
   }
 
   await ensureActivityConfig();
@@ -500,21 +559,21 @@ exports.adminUpdateNTask = functions.region(REGION).https.onCall(async (data, co
   return { ok: true };
 });
 
-exports.adminResetTaskCompletion = functions.region(REGION).https.onCall(async (data, context) => {
+exports.adminResetTaskCompletion = callableRuntime.https.onCall(async (data, context) => {
   const adminUid = assertAuth(context);
   await assertAdmin(adminUid);
 
-  const targetUid = String(data?.uid || '');
-  const taskId = String(data?.taskId || '');
+  const targetUid = String(data?.uid || '').trim();
+  const taskId = String(data?.taskId || '').toUpperCase();
   if (!targetUid || !TASK_LIST_SEQUENCE.includes(taskId)) {
-    throw new functions.https.HttpsError('invalid-argument', '會員 UID 或任務代號不正確。');
+    throw httpsError('invalid-argument', '請提供有效的 UID 與任務代號。');
   }
 
   const taskRef = db.ref(`users/${targetUid}/activities/${LIFE_GRID_ACTIVITY_ID}/tasks/${taskId}`);
   const taskSnapshot = await taskRef.once('value');
   const task = taskSnapshot.val();
   if (!task) {
-    throw new functions.https.HttpsError('not-found', '找不到任務資料。');
+    throw httpsError('not-found', '找不到這個任務資料。');
   }
 
   await db.ref().update({
@@ -529,13 +588,13 @@ exports.adminResetTaskCompletion = functions.region(REGION).https.onCall(async (
   return { ok: true };
 });
 
-exports.adminDeleteUserData = functions.region(REGION).https.onCall(async (data, context) => {
+exports.adminDeleteUserData = callableRuntime.https.onCall(async (data, context) => {
   const adminUid = assertAuth(context);
   await assertAdmin(adminUid);
 
   const targetUid = String(data?.uid || '').trim();
   if (!targetUid) {
-    throw new functions.https.HttpsError('invalid-argument', '會員 UID 必填。');
+    throw httpsError('invalid-argument', '請提供 UID。');
   }
 
   const feedSnapshot = await db.ref(`activity_feeds/${LIFE_GRID_ACTIVITY_ID}`).once('value');

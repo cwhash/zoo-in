@@ -3,14 +3,12 @@ import { ref, computed } from 'vue'
 import { db, storage, functions } from '@/firebase'
 import {
   ref as dbRef,
-  get,
   update,
   onValue,
   query,
   orderByChild,
   equalTo,
   limitToLast,
-  runTransaction,
 } from 'firebase/database'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { httpsCallable } from 'firebase/functions'
@@ -24,7 +22,7 @@ import {
   LIFE_GRID_START_AT,
   LIFE_GRID_END_AT,
 } from '@/config/constants'
-import { mergeActivityConfig, sanitizeText, hashActivityCode } from '@/utils/helpers'
+import { mergeActivityConfig, sanitizeText } from '@/utils/helpers'
 
 export const useActivityStore = defineStore('activity', () => {
   const activityConfig = ref({ ...FALLBACK_ACTIVITY_CONFIG })
@@ -66,7 +64,7 @@ export const useActivityStore = defineStore('activity', () => {
     const task = getUserTask(taskId)
     const def = getTaskDefinition(taskId)
     if (isUserEditableTask(taskId)) {
-      return task.custom_title || `${taskId} 尚未填寫`
+      return task.custom_title || `${taskId} 自訂任務`
     }
     return def?.title || `官方任務 ${taskId}`
   }
@@ -123,72 +121,26 @@ export const useActivityStore = defineStore('activity', () => {
 
   async function unlockActivity(code) {
     const authStore = useAuthStore()
-    const uid = authStore.user?.uid
-    if (!uid) throw new Error('請先登入')
-    if (isUnlocked.value) throw new Error('已解鎖此活動。')
+    if (!authStore.user?.uid) throw new Error('請先登入')
+    if (isUnlocked.value) throw new Error('你已經解鎖這個活動')
 
-    const submittedHash = await hashActivityCode(code)
-    const codeRef = dbRef(db, `activity_code_hashes/${submittedHash}`)
-    const codeSnapshot = await get(codeRef)
-    const codeConfig = codeSnapshot.val() || {}
-    const activityHash = String(codeConfig.code_hash || submittedHash)
-    const used = Number(codeConfig.used_count || 0)
-    const max = Number(codeConfig.max_uses || LIFE_GRID_MAX_USES)
-
-    if (!codeSnapshot.exists() || codeConfig.active === false || codeConfig.activity_id !== LIFE_GRID_ACTIVITY_ID) {
-      throw new Error('活動代碼不正確或尚未啟用。')
-    }
-    if (submittedHash !== activityHash) {
-      throw new Error('活動代碼不正確。')
-    }
-    if (used >= max) {
-      throw new Error('活動名額已滿。')
-    }
-
-    const usageResult = await runTransaction(dbRef(db, `activity_code_hashes/${submittedHash}/used_count`), (current) => {
-      const count = Number(current || 0)
-      if (count >= max) return
-      return count + 1
-    })
-    if (!usageResult.committed) {
-      throw new Error('活動名額已滿。')
-    }
-
-    const time = Date.now()
-    await update(dbRef(db), {
-      [`users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`]: {
-        activity_id: LIFE_GRID_ACTIVITY_ID,
-        unlocked_at: time,
-        code_hash: activityHash,
-      },
-      [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/joined_at`]: time,
-      [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/updated_at`]: time,
-    })
-
-    await runTransaction(dbRef(db, `activity_join_counters/${LIFE_GRID_ACTIVITY_ID}`), (current) => {
-      const counter = current || {}
-      return {
-        activity_id: LIFE_GRID_ACTIVITY_ID,
-        joined_count: Number(counter.joined_count || 0) + 1,
-        updated_at: time,
-      }
-    })
-
-    return { activityName: activityConfig.value?.name || 'Life Grid 2027' }
+    const fn = httpsCallable(functions, 'unlockActivity')
+    const result = await fn({ code })
+    return result.data
   }
 
   async function saveTaskPlan(taskId, title, description) {
-    if (!isLifeGridActive()) throw new Error('活動已結束，目前只能查看紀錄。')
+    if (!isLifeGridActive()) throw new Error('活動尚未開始或已結束，現在不能編輯任務')
     const authStore = useAuthStore()
     const uid = authStore.user?.uid
     if (!uid) throw new Error('請先登入')
 
     const task = getUserTask(taskId)
     if (task.locked_at || task.status === 'completed') {
-      throw new Error('任務內容已鎖定，如需修改請向管理員申請。')
+      throw new Error('任務規劃已鎖定或已完成，不能再修改')
     }
     if (!sanitizeText(title, 50)) {
-      throw new Error('請先填寫任務標題。')
+      throw new Error('請輸入任務標題')
     }
 
     const taskRef = dbRef(db, `users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/tasks/${taskId}`)
@@ -204,13 +156,13 @@ export const useActivityStore = defineStore('activity', () => {
   }
 
   async function completeTask(taskId, imageBlob) {
-    if (!isLifeGridActive()) throw new Error('活動已結束，目前只能查看紀錄。')
+    if (!isLifeGridActive()) throw new Error('活動尚未開始或已結束，現在不能完成任務')
     const authStore = useAuthStore()
     const uid = authStore.user?.uid
     if (!uid) throw new Error('請先登入')
 
     if (imageBlob.size > 3 * 1024 * 1024) {
-      throw new Error('照片壓縮後仍超過 3MB，請換一張較小的照片。')
+      throw new Error('照片檔案太大，請壓縮到 3MB 以下再上傳')
     }
 
     const imagePath = `submissions/${LIFE_GRID_ACTIVITY_ID}/${uid}/${taskId}.jpg`
@@ -233,6 +185,11 @@ export const useActivityStore = defineStore('activity', () => {
     if (!imagePath) return null
     const imgRef = storageRef(storage, imagePath)
     return getDownloadURL(imgRef)
+  }
+
+  async function adminUpdateActivityCode(code, maxUses) {
+    const fn = httpsCallable(functions, 'adminUpdateActivityCode')
+    return (await fn({ code, maxUses })).data
   }
 
   async function adminUpdateNTask(taskId, title, description) {
@@ -305,6 +262,7 @@ export const useActivityStore = defineStore('activity', () => {
     unlockActivity,
     saveTaskPlan,
     completeTask,
+    adminUpdateActivityCode,
     adminUpdateNTask,
     adminResetTask,
     adminDeleteUser,

@@ -10,7 +10,7 @@ Zoo-In is a Firebase-based activity platform. The production frontend is a Vue 3
 - Vue 3 + Vite frontend with Pinia stores and Vue Router.
 - Firebase Hosting is the production frontend target.
 - Admin backend route is `/admin`.
-- Activity unlock uses the Spark/free-plan Realtime Database hash lookup flow.
+- Cloud Functions are the trusted backend for activity unlock, task completion, achievements, feeds, and admin operations.
 - Life Grid 2027 is the first activity.
 - Life Grid task completion requires a cropped 4:5 JPEG photo upload to Firebase Storage.
 - Life Grid has hidden, activity-specific achievements and a public feed.
@@ -41,18 +41,20 @@ Storage path for task photos:
 submissions/{activity_id}/{uid}/{task_id}.jpg
 ```
 
-## Functions Status
+## Functions
 
-The Spark/free deployment path does not deploy Cloud Functions. The `functions/` directory is retained as legacy callable source for reference.
+The project now runs on Firebase Blaze so Cloud Functions are the official backend. Callable Functions are deployed in `asia-southeast1` with `maxInstances: 3` and no warm instances.
 
-Current frontend code still calls existing callable Functions through the Vue activity store for task completion and some admin operations:
+Deployed callable Functions:
 
+- `unlockActivity`
 - `completeTask`
+- `adminUpdateActivityCode`
 - `adminUpdateNTask`
 - `adminResetTaskCompletion`
 - `adminDeleteUserData`
 
-Activity code unlock no longer uses the legacy `unlockActivity` callable. The current flow hashes the submitted code in the browser and looks up `activity_code_hashes/{code_hash}` in Realtime Database.
+Activity codes are not stored in frontend code. Admins set a code through `/admin`; the backend normalizes it, stores its SHA-256 hash in `activity_code_hashes/{code_hash}`, and uses transactions to enforce the 999 participant limit.
 
 ## Run Locally
 
@@ -62,7 +64,7 @@ npm ci
 npm run dev
 ```
 
-For Google sign-in, add `localhost` in Firebase Authentication authorized domains.
+For Google sign-in, add `localhost` in Firebase Authentication authorized domains if local sign-in is needed.
 
 ## Build
 
@@ -79,14 +81,16 @@ Deployment is handled by GitHub Actions:
 
 - Firebase Hosting builds `client/` and publishes `client/dist`.
 - Firebase Database Rules deploys `database.rules.json`.
+- Firebase Functions deploys `functions/` only when backend files change.
 
-GitHub Pages deployment has been removed. Firebase Hosting is the production frontend. The Spark/free path intentionally does not deploy Cloud Functions.
+GitHub Pages deployment has been removed. Firebase Hosting is the production frontend.
 
 Useful targeted commands:
 
 ```bash
 firebase deploy --only hosting
 firebase deploy --only database
+npx firebase-tools@latest deploy --only functions --project zoo-in --non-interactive
 ```
 
 The first admin must be added manually in Realtime Database:
@@ -95,13 +99,17 @@ The first admin must be added manually in Realtime Database:
 admins/{uid}: true
 ```
 
+## Cost Controls
+
+The Firebase project is on Blaze. Budget Alert is configured in Google Cloud, and Functions use `maxInstances: 3` to reduce runaway cost risk. Google Cloud budgets alert but do not hard-stop billing, so keep API keys restricted and monitor usage after releases.
+
 ## File Guide
 
 - `client/`: Vue 3 frontend app.
 - `client/src/router/`: routes, including `/admin`.
 - `client/src/stores/`: Firebase-backed app state.
 - `client/src/components/`: shared UI and Life Grid components.
-- `firebase.json`: Firebase Hosting and rules configuration.
+- `functions/index.js`: Firebase Cloud Functions backend.
+- `firebase.json`: Firebase Hosting, Functions, and rules configuration.
 - `database.rules.json`: Realtime Database rules.
 - `storage.rules`: Firebase Storage rules.
-- `functions/index.js`: legacy Cloud Functions source, not deployed by the Spark/free workflow.

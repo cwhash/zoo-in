@@ -5,7 +5,7 @@ import { useActivityStore } from '@/stores/activity'
 import { useToastStore } from '@/stores/toast'
 import { db } from '@/firebase'
 import { ref as dbRef, get } from 'firebase/database'
-import { N_TASKS } from '@/config/constants'
+import { LIFE_GRID_MAX_USES, N_TASKS } from '@/config/constants'
 
 const authStore = useAuthStore()
 const activityStore = useActivityStore()
@@ -14,6 +14,12 @@ const toast = useToastStore()
 const isAdmin = ref(false)
 const loading = ref(true)
 const nTaskForms = ref({})
+
+const activityCode = ref('')
+const activityCodeMaxUses = ref(LIFE_GRID_MAX_USES)
+const activityCodeMsg = ref('')
+const activityCodeError = ref(false)
+const savingActivityCode = ref(false)
 
 const resetUid = ref('')
 const resetTaskId = ref('')
@@ -60,35 +66,65 @@ function initNTaskForms() {
   nTaskForms.value = forms
 }
 
+async function saveActivityCode(event) {
+  event.preventDefault()
+  if (!activityCode.value.trim()) {
+    activityCodeMsg.value = '請輸入活動代碼'
+    activityCodeError.value = true
+    return
+  }
+
+  const maxUses = Number(activityCodeMaxUses.value)
+  if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > LIFE_GRID_MAX_USES) {
+    activityCodeMsg.value = `使用人數上限必須介於 1 到 ${LIFE_GRID_MAX_USES}`
+    activityCodeError.value = true
+    return
+  }
+
+  savingActivityCode.value = true
+  activityCodeMsg.value = '儲存中...'
+  activityCodeError.value = false
+  try {
+    const result = await activityStore.adminUpdateActivityCode(activityCode.value.trim(), maxUses)
+    activityCode.value = ''
+    activityCodeMsg.value = `活動代碼已更新，目前已使用 ${result.usedCount || 0} / ${result.maxUses || maxUses}`
+  } catch (err) {
+    activityCodeMsg.value = err?.message || '活動代碼更新失敗'
+    activityCodeError.value = true
+  } finally {
+    savingActivityCode.value = false
+  }
+}
+
 async function saveNTask(taskId) {
   const form = nTaskForms.value[taskId]
   if (!form?.title?.trim()) {
-    toast.show('N 任務標題必填。')
+    toast.show('N 任務標題不能空白')
     return
   }
   try {
     await activityStore.adminUpdateNTask(taskId, form.title.trim(), form.description.trim())
-    toast.show(`${taskId} 已儲存。`)
+    toast.show(`${taskId} 已儲存`)
   } catch (err) {
-    toast.show(err?.message || '儲存失敗。')
+    toast.show(err?.message || '儲存失敗')
   }
 }
 
 async function resetTask(event) {
   event.preventDefault()
   if (!resetUid.value.trim() || !resetTaskId.value.trim()) {
-    resetMsg.value = '請填寫 UID 與任務代號。'
+    resetMsg.value = '請填寫 UID 與任務代號'
     resetError.value = true
     return
   }
   resetting.value = true
-  resetMsg.value = '處理中...'
+  resetMsg.value = '重設中...'
   resetError.value = false
   try {
     await activityStore.adminResetTask(resetUid.value.trim(), resetTaskId.value.trim().toUpperCase())
-    resetMsg.value = '已取消完成狀態，相關成就也會重新檢查。'
+    resetMsg.value = '任務已重設，提交紀錄與相關成就已重新整理'
   } catch (err) {
-    resetMsg.value = err?.message || '操作失敗。'
+    resetMsg.value = err?.message || '重設失敗'
     resetError.value = true
   } finally {
     resetting.value = false
@@ -98,21 +134,21 @@ async function resetTask(event) {
 async function deleteUser(event) {
   event.preventDefault()
   if (!deleteUid.value.trim()) {
-    deleteMsg.value = '請填寫會員 UID。'
+    deleteMsg.value = '請填寫使用者 UID'
     deleteError.value = true
     return
   }
-  if (!confirm('確定刪除這位會員的 Zoo-In 資料、照片、動態與成就嗎？Firebase Auth 帳號不會刪除。')) return
+  if (!confirm('確定要刪除這位使用者在 Zoo-In 的資料嗎？這不會刪除 Firebase Auth 帳號。')) return
 
   deleting.value = true
   deleteMsg.value = '刪除中...'
   deleteError.value = false
   try {
     await activityStore.adminDeleteUser(deleteUid.value.trim())
-    deleteMsg.value = '會員資料已刪除。'
+    deleteMsg.value = '使用者資料已刪除'
     deleteUid.value = ''
   } catch (err) {
-    deleteMsg.value = err?.message || '刪除失敗。'
+    deleteMsg.value = err?.message || '刪除失敗'
     deleteError.value = true
   } finally {
     deleting.value = false
@@ -127,18 +163,47 @@ async function deleteUser(event) {
 
   <section v-else-if="!isAdmin" class="dashboard-view">
     <section class="unlock-panel">
-      <p class="muted-text">這個 Google 帳號沒有管理員權限。</p>
+      <p class="muted-text">此 Google 帳號沒有管理員權限。</p>
     </section>
   </section>
 
   <section v-else class="admin-grid">
     <section class="admin-panel">
-      <p class="eyebrow">N 任務編輯</p>
-      <h2>官方任務管理</h2>
+      <p class="eyebrow">Life Grid 活動代碼</p>
+      <h2>設定活動代碼</h2>
       <p class="muted-text">
         使用次數：{{ activityStore.activityConfig?._codeUsed || 0 }} /
-        {{ activityStore.activityConfig?._codeMax || 999 }}
+        {{ activityStore.activityConfig?._codeMax || LIFE_GRID_MAX_USES }}
       </p>
+      <form @submit="saveActivityCode">
+        <label class="task-field">
+          <span>新活動代碼</span>
+          <input
+            v-model="activityCode"
+            type="text"
+            autocomplete="off"
+            placeholder="輸入後會由後端轉成 SHA-256 hash"
+          />
+        </label>
+        <label class="task-field">
+          <span>使用人數上限</span>
+          <input
+            v-model.number="activityCodeMaxUses"
+            type="number"
+            min="1"
+            :max="LIFE_GRID_MAX_USES"
+          />
+        </label>
+        <button class="primary-btn" type="submit" :disabled="savingActivityCode" style="margin-top: 8px">
+          儲存活動代碼
+        </button>
+        <p class="form-message" :class="{ error: activityCodeError }">{{ activityCodeMsg }}</p>
+      </form>
+    </section>
+
+    <section class="admin-panel">
+      <p class="eyebrow">N 任務管理</p>
+      <h2>官方任務內容</h2>
 
       <div class="n-task-editor">
         <article
@@ -170,11 +235,11 @@ async function deleteUser(event) {
     </section>
 
     <section class="admin-panel">
-      <p class="eyebrow">管理</p>
-      <h2>取消任務完成</h2>
+      <p class="eyebrow">管理操作</p>
+      <h2>重設任務完成狀態</h2>
       <form @submit="resetTask">
         <label class="task-field">
-          <span>會員 UID</span>
+          <span>使用者 UID</span>
           <input v-model="resetUid" type="text" />
         </label>
         <label class="task-field">
@@ -182,17 +247,17 @@ async function deleteUser(event) {
           <input v-model="resetTaskId" type="text" />
         </label>
         <button class="primary-btn" type="submit" :disabled="resetting" style="margin-top: 8px">
-          取消完成
+          重設任務
         </button>
         <p class="form-message" :class="{ error: resetError }">{{ resetMsg }}</p>
       </form>
     </section>
 
     <section class="admin-panel">
-      <h2>刪除會員資料</h2>
+      <h2>刪除使用者資料</h2>
       <form @submit="deleteUser">
         <label class="task-field">
-          <span>會員 UID</span>
+          <span>使用者 UID</span>
           <input v-model="deleteUid" type="text" />
         </label>
         <button
@@ -201,7 +266,7 @@ async function deleteUser(event) {
           :disabled="deleting"
           style="margin-top: 8px; background: var(--danger); border-color: var(--danger)"
         >
-          刪除會員資料
+          刪除使用者資料
         </button>
         <p class="form-message" :class="{ error: deleteError }">{{ deleteMsg }}</p>
       </form>
