@@ -2,35 +2,18 @@
 
 [English](README.md) | [繁體中文](README_zh-TW.md)
 
-Zoo-In is a Firebase-based activity platform. Users sign in with Google, manage a Zoo-In profile, enter an activity code, and unlock activity-specific experiences such as Life Grid 2027.
+Zoo-In is a Firebase-based activity platform. The production frontend is a Vue 3 app built from `client/` and deployed to Firebase Hosting at `https://zoo-in.web.app`.
 
 ## Current Product Scope
 
 - Google sign-in through Firebase Authentication.
-- Zoo-In member home after login.
-- Public nickname stored in the Zoo-In profile. Google display name and avatar are shown only to the signed-in user.
-- Activity unlock through a Spark/free-plan Realtime Database hash lookup.
-- Life Grid 2027 as the first activity.
+- Vue 3 + Vite frontend with Pinia stores and Vue Router.
+- Firebase Hosting is the production frontend target.
+- Admin backend route is `/admin`.
+- Activity unlock uses the Spark/free-plan Realtime Database hash lookup flow.
+- Life Grid 2027 is the first activity.
 - Life Grid task completion requires a cropped 4:5 JPEG photo upload to Firebase Storage.
-- Life Grid has hidden, activity-specific achievements.
-- Life Grid activity page shows the latest 10 public feed events.
-- Separate `admin.html` page for admin tasks.
-
-## Life Grid 2027 Rules
-
-- Activity code is configured in the admin backend and is case-insensitive.
-- Activity period: July 1, 2026 to December 31, 2027.
-- Users can unlock the activity before the start date, but task editing and completion remain locked until the activity opens.
-- After the activity ends, users can only view records.
-- S/A/B/C tasks are filled by the user and lock after first save.
-- N tasks are shared official tasks edited by admins.
-- Completing a task requires a cropped 4:5 JPEG photo.
-- Uploaded task photos are private to the user and admins.
-- Completed tasks cannot be cancelled by users. Admins can reset completion.
-- The first bundled achievement is:
-  - Title: `萬丈高樓平地起`
-  - Description: `傳奇的開始！`
-  - Condition: complete the first task.
+- Life Grid has hidden, activity-specific achievements and a public feed.
 
 ## Firebase Structure
 
@@ -62,34 +45,42 @@ submissions/{activity_id}/{uid}/{task_id}.jpg
 
 The Spark/free deployment path does not deploy Cloud Functions. The `functions/` directory is retained as legacy callable source for reference.
 
-Current frontend code still calls existing callable Functions through `js/activities/life-grid/functions-adapter.js` for task completion and some admin operations:
+Current frontend code still calls existing callable Functions through the Vue activity store for task completion and some admin operations:
 
 - `completeTask`
 - `adminUpdateNTask`
 - `adminResetTaskCompletion`
 - `adminDeleteUserData`
 
-Activity code unlock no longer uses the legacy `unlockActivity` callable. The current free-plan unlock flow hashes the submitted code in the browser and looks up `activity_code_hashes/{code_hash}` in Realtime Database.
+Activity code unlock no longer uses the legacy `unlockActivity` callable. The current flow hashes the submitted code in the browser and looks up `activity_code_hashes/{code_hash}` in Realtime Database.
 
 ## Run Locally
 
 ```bash
-python -m http.server 8000
+cd client
+npm ci
+npm run dev
 ```
 
-Open `http://localhost:8000`.
-
 For Google sign-in, add `localhost` in Firebase Authentication authorized domains.
+
+## Build
+
+```bash
+cd client
+npm run build
+```
+
+The production build is generated in `client/dist`.
 
 ## Deploy
 
 Deployment is handled by GitHub Actions:
 
-- GitHub Pages publishes the static frontend.
-- Firebase Hosting publishes the same static frontend.
+- Firebase Hosting builds `client/` and publishes `client/dist`.
 - Firebase Database Rules deploys `database.rules.json`.
 
-The Spark/free path intentionally does not deploy Cloud Functions. Avoid running a full `firebase deploy` unless the deployment target is explicit.
+GitHub Pages deployment has been removed. Firebase Hosting is the production frontend. The Spark/free path intentionally does not deploy Cloud Functions.
 
 Useful targeted commands:
 
@@ -106,15 +97,11 @@ admins/{uid}: true
 
 ## File Guide
 
-- `index.html`: user-facing Zoo-In platform shell.
-- `admin.html`: separate admin shell.
-- `styles.css`: shared frontend styles.
-- `script.js`: compatibility entrypoint for the platform module.
-- `admin.js`: compatibility entrypoint for the admin module.
-- `js/shared/`: shared Firebase and activity-code utilities.
-- `js/platform/`: user-facing platform entrypoint.
-- `js/admin/`: admin entrypoint.
-- `js/activities/life-grid/`: Life Grid activity config and adapters.
+- `client/`: Vue 3 frontend app.
+- `client/src/router/`: routes, including `/admin`.
+- `client/src/stores/`: Firebase-backed app state.
+- `client/src/components/`: shared UI and Life Grid components.
+- `firebase.json`: Firebase Hosting and rules configuration.
 - `database.rules.json`: Realtime Database rules.
 - `storage.rules`: Firebase Storage rules.
 - `functions/index.js`: legacy Cloud Functions source, not deployed by the Spark/free workflow.

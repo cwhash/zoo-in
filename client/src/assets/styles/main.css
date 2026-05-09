@@ -1,3 +1,4 @@
+/* ===================== Zoo-In Design Tokens ===================== */
 :root {
   color-scheme: light;
   --bg: #f3f5f2;
@@ -17,9 +18,7 @@
   --level-n: #d9dde1;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -29,25 +28,13 @@ body {
   font-family: "Noto Sans TC", "Inter", Arial, sans-serif;
 }
 
-button,
-input,
-textarea {
-  font: inherit;
-}
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
 
-button {
-  cursor: pointer;
-}
+.hidden, [hidden] { display: none !important; }
 
-a {
-  color: inherit;
-}
-
-.hidden,
-[hidden] {
-  display: none !important;
-}
-
+/* ===================== Layout ===================== */
 .app {
   width: min(100%, 760px);
   min-height: 100dvh;
@@ -55,6 +42,7 @@ a {
   padding: 12px 12px 28px;
 }
 
+/* ===================== Topbar ===================== */
 .topbar {
   position: sticky;
   top: 0;
@@ -77,9 +65,8 @@ a {
   letter-spacing: 0.06em;
 }
 
-.icon-button,
-.avatar-button,
-.close-button {
+/* ===================== Buttons ===================== */
+.icon-button, .avatar-button, .close-button {
   width: 44px;
   height: 44px;
   border: 1px solid var(--border);
@@ -102,10 +89,7 @@ a {
   background: var(--text);
 }
 
-.avatar-button {
-  padding: 0;
-  overflow: hidden;
-}
+.avatar-button { padding: 0; overflow: hidden; }
 
 .google-avatar {
   width: 100%;
@@ -114,8 +98,7 @@ a {
   display: block;
 }
 
-.primary-btn,
-.ghost-btn {
+.primary-btn, .ghost-btn {
   min-height: 44px;
   border-radius: 10px;
   padding: 0 14px;
@@ -128,9 +111,7 @@ a {
   background: var(--primary);
 }
 
-.primary-btn:hover {
-  background: var(--primary-dark);
-}
+.primary-btn:hover { background: var(--primary-dark); }
 
 .ghost-btn {
   border: 1px solid var(--border);
@@ -138,12 +119,12 @@ a {
   background: var(--surface);
 }
 
-.primary-btn:disabled,
-.ghost-btn:disabled {
+.primary-btn:disabled, .ghost-btn:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
+/* ===================== Typography ===================== */
 .eyebrow {
   margin: 0;
   color: var(--muted);
@@ -153,44 +134,28 @@ a {
   text-transform: uppercase;
 }
 
-.muted-text,
-.empty-text {
+.muted-text, .empty-text {
   color: var(--muted);
   font-size: 0.9rem;
 }
 
-.dashboard-view,
-.life-grid-view {
-  display: grid;
-  gap: 12px;
-}
+/* ===================== Views ===================== */
+.dashboard-view, .life-grid-view { display: grid; gap: 12px; }
 
-.unlock-panel,
-.activity-panel,
-.activity-hero,
-.countdown-section,
-.grid-section,
-.achievement-panel,
-.feed-panel,
-.admin-panel {
+/* ===================== Panels ===================== */
+.unlock-panel, .activity-panel, .activity-hero,
+.countdown-section, .grid-section,
+.achievement-panel, .feed-panel, .admin-panel {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
 
-.unlock-panel {
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-}
+.unlock-panel { display: grid; gap: 10px; padding: 16px; }
 
-.unlock-panel h2,
-.section-head h2,
-.activity-hero h2,
-.account-identity h3 {
-  margin: 0;
-}
+.unlock-panel h2, .section-head h2,
+.activity-hero h2, .account-identity h3 { margin: 0; }
 
 .unlock-form {
   display: grid;
@@ -198,12 +163,9 @@ a {
   gap: 8px;
 }
 
-.unlock-form input,
-.profile-form input,
-.task-field input,
-.task-field textarea,
-.admin-task-row input,
-.admin-task-row textarea {
+.unlock-form input, .profile-form input,
+.task-field input, .task-field textarea,
+.admin-task-row input, .admin-task-row textarea {
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--border);
@@ -220,16 +182,9 @@ a {
   font-size: 0.84rem;
 }
 
-.form-message.error,
-.login-error {
-  color: var(--danger);
-}
+.form-message.error, .login-error { color: var(--danger); }
 
-.activity-panel,
-.achievement-panel,
-.feed-panel {
-  padding: 16px;
-}
+.activity-panel, .achievement-panel, .feed-panel { padding: 16px; }
 
 .section-head {
   display: flex;
@@ -239,34 +194,20 @@ a {
   margin-bottom: 12px;
 }
 
-.activity-cards,
-.achievement-list,
-.activity-feed {
-  display: grid;
-  gap: 10px;
-}
+.activity-cards, .achievement-list, .activity-feed { display: grid; gap: 10px; }
 
-.activity-card,
-.achievement-item,
-.feed-item {
+.activity-card, .achievement-item, .feed-item {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface-soft);
   padding: 12px;
 }
 
-.activity-card h3,
-.activity-card p,
-.achievement-item h3,
-.achievement-item p,
-.feed-item p {
-  margin: 0;
-}
+.activity-card h3, .activity-card p,
+.achievement-item h3, .achievement-item p,
+.feed-item p { margin: 0; }
 
-.activity-card {
-  display: grid;
-  gap: 12px;
-}
+.activity-card { display: grid; gap: 12px; }
 
 .activity-card-footer {
   display: flex;
@@ -275,8 +216,8 @@ a {
   gap: 10px;
 }
 
-.small-pill,
-.progress-pill {
+/* ===================== Pills ===================== */
+.small-pill, .progress-pill {
   display: inline-grid;
   place-items: center;
   border: 1px solid var(--border);
@@ -286,23 +227,12 @@ a {
   font-weight: 900;
 }
 
-.small-pill {
-  min-width: 34px;
-  min-height: 30px;
-  padding: 0 10px;
-}
+.small-pill { min-width: 34px; min-height: 30px; padding: 0 10px; }
 
-.progress-pill {
-  min-width: 104px;
-  min-height: 70px;
-  padding: 8px 14px;
-}
+.progress-pill { min-width: 104px; min-height: 70px; padding: 8px 14px; }
+.progress-pill span { color: var(--muted); font-size: 0.78rem; }
 
-.progress-pill span {
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-
+/* ===================== Activity Hero ===================== */
 .activity-hero {
   display: flex;
   justify-content: space-between;
@@ -311,27 +241,13 @@ a {
   padding: 16px;
 }
 
-.countdown-section,
-.grid-section {
-  padding: 14px;
-}
+.countdown-section, .grid-section { padding: 14px; }
 
-.countdown-title,
-.countdown-value {
-  margin: 0;
-}
+.countdown-title, .countdown-value { margin: 0; }
+.countdown-title { color: var(--muted); font-size: 0.82rem; font-weight: 800; }
+.countdown-value { margin-top: 4px; font-weight: 900; }
 
-.countdown-title {
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.countdown-value {
-  margin-top: 4px;
-  font-weight: 900;
-}
-
+/* ===================== Grid ===================== */
 .level-legend {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -372,8 +288,7 @@ a {
   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.task-cell:hover,
-.task-cell:focus-visible {
+.task-cell:hover, .task-cell:focus-visible {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(22, 36, 29, 0.14);
 }
@@ -404,8 +319,8 @@ a {
   background: var(--primary);
 }
 
-.side-drawer,
-.task-panel {
+/* ===================== Drawers & Task Panel ===================== */
+.side-drawer, .task-panel {
   position: fixed;
   top: 0;
   z-index: 20;
@@ -421,24 +336,11 @@ a {
   transition: transform 0.22s ease;
 }
 
-.left-drawer {
-  left: 0;
-  transform: translateX(-104%);
-}
+.left-drawer { left: 0; transform: translateX(-104%); }
+.right-drawer, .task-panel { right: 0; transform: translateX(104%); }
+.side-drawer.open, .task-panel.open { transform: translateX(0); }
 
-.right-drawer,
-.task-panel {
-  right: 0;
-  transform: translateX(104%);
-}
-
-.side-drawer.open,
-.task-panel.open {
-  transform: translateX(0);
-}
-
-.drawer-header,
-.task-panel-header {
+.drawer-header, .task-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -447,27 +349,18 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
-.drawer-header h2,
-.task-panel-header h2 {
-  margin: 0;
-}
+.drawer-header h2, .task-panel-header h2 { margin: 0; }
 
-.close-button {
-  font-size: 1.35rem;
-  line-height: 1;
-}
+.close-button { font-size: 1.35rem; line-height: 1; }
 
-.drawer-nav,
-.profile-form,
-.task-panel-body {
+.drawer-nav, .profile-form, .task-panel-body {
   display: grid;
   align-content: start;
   gap: 12px;
   padding: 0 16px 16px;
 }
 
-.drawer-nav button,
-.drawer-nav a {
+.drawer-nav button, .drawer-nav a {
   display: flex;
   align-items: center;
   min-height: 48px;
@@ -498,9 +391,7 @@ a {
   background: var(--surface-soft);
 }
 
-.profile-form label,
-.task-field,
-.admin-task-row label {
+.profile-form label, .task-field, .admin-task-row label {
   display: grid;
   gap: 6px;
   color: var(--muted);
@@ -508,9 +399,7 @@ a {
   font-weight: 800;
 }
 
-.task-panel {
-  gap: 0;
-}
+.task-panel { gap: 0; }
 
 .task-status {
   border-radius: 10px;
@@ -520,17 +409,13 @@ a {
   font-size: 0.9rem;
 }
 
-.task-field textarea,
-.admin-task-row textarea {
+.task-field textarea, .admin-task-row textarea {
   min-height: 96px;
   resize: vertical;
 }
 
-.cropper,
-.crop-controls {
-  display: grid;
-  gap: 10px;
-}
+/* ===================== Image Crop ===================== */
+.cropper, .crop-controls { display: grid; gap: 10px; }
 
 .crop-frame {
   position: relative;
@@ -569,6 +454,7 @@ a {
   border-radius: 10px;
 }
 
+/* ===================== Overlay & Toast ===================== */
 .overlay {
   position: fixed;
   inset: 0;
@@ -591,6 +477,7 @@ a {
   font-weight: 800;
 }
 
+/* ===================== Login ===================== */
 .login-screen {
   min-height: 100dvh;
   display: grid;
@@ -646,11 +533,6 @@ a {
   box-shadow: var(--shadow);
 }
 
-.google-signin-btn:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
 .login-error {
   min-height: 1.2em;
   margin: 0;
@@ -658,28 +540,12 @@ a {
   text-align: center;
 }
 
-.admin-link-btn {
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-}
+/* ===================== Admin ===================== */
+.admin-grid { display: grid; gap: 12px; }
 
-.admin-grid {
-  display: grid;
-  gap: 12px;
-}
+.admin-panel { display: grid; gap: 14px; padding: 16px; }
 
-.admin-panel {
-  display: grid;
-  gap: 14px;
-  padding: 16px;
-}
-
-.n-task-editor,
-.admin-task-row {
-  display: grid;
-  gap: 12px;
-}
+.n-task-editor, .admin-task-row { display: grid; gap: 12px; }
 
 .admin-task-row {
   padding: 12px;
@@ -688,42 +554,28 @@ a {
   background: var(--surface-soft);
 }
 
-.admin-task-row h3 {
-  margin: 0;
-}
+.admin-task-row h3 { margin: 0; }
 
+/* ===================== Responsive ===================== */
 @media (min-width: 760px) {
-  .app {
-    padding: 18px;
-  }
+  .app { padding: 18px; }
 
   .dashboard-view {
     grid-template-columns: 1fr 1fr;
     align-items: start;
   }
 
-  .unlock-panel {
-    grid-column: 1 / -1;
-  }
+  .unlock-panel { grid-column: 1 / -1; }
 
-  .unlock-form {
-    grid-template-columns: minmax(0, 1fr) 120px;
-  }
+  .unlock-form { grid-template-columns: minmax(0, 1fr) 120px; }
 
-  .task-grid {
-    gap: 10px;
-  }
-
-  .task-cell {
-    font-size: 1rem;
-  }
+  .task-grid { gap: 10px; }
+  .task-cell { font-size: 1rem; }
 
   .admin-grid {
     grid-template-columns: minmax(0, 1fr) minmax(320px, 0.7fr);
     align-items: start;
   }
 
-  .admin-panel:nth-child(2) {
-    grid-row: span 3;
-  }
+  .admin-panel:nth-child(2) { grid-row: span 3; }
 }

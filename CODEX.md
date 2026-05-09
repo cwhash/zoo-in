@@ -12,6 +12,7 @@ This document defines development notes for the Zoo-In project.
 
 - Zoo-In is the activity platform.
 - Life Grid is one activity inside Zoo-In, currently keyed as `life_grid_2027`.
+- The production frontend is the Vue app in `client/`, deployed to Firebase Hosting.
 - Users land on the Zoo-In activity center after Google sign-in.
 - Locked activities should not appear on the user home page.
 - Activity unlock currently uses the Spark/free Realtime Database hash lookup flow.
@@ -33,20 +34,16 @@ This document defines development notes for the Zoo-In project.
 
 ## Code Organization
 
-- `index.html` loads the user-facing platform module from `js/platform/app.js`.
-- `admin.html` loads the separate admin module from `js/admin/app.js`.
-- `script.js` and `admin.js` are thin compatibility entrypoints.
-- `js/shared/` contains shared Firebase and activity-code helpers.
-- `js/activities/life-grid/` contains Life Grid config and adapters.
+- `client/` contains the Vue 3 + Vite frontend.
+- `client/src/router/` defines routes, including `/admin`.
+- `client/src/stores/` contains Firebase-backed app state.
+- `client/src/components/` contains shared shell and Life Grid UI.
 - `functions/` contains legacy Firebase Cloud Functions source. The Spark/free workflow does not deploy it.
 - `database.rules.json` and `storage.rules` define Firebase security rules.
 
 ## Quality Checks
 
-- Run `node --check script.js`.
-- Run `node --check admin.js`.
-- Run `node --check js/platform/app.js`.
-- Run `node --check js/admin/app.js`.
+- Run `npm run build` in `client/`.
 - Run `node --check functions/index.js` for legacy source syntax only.
 - Validate JSON files after edits.
 - Keep README files aligned with GitHub Actions deployment behavior.
