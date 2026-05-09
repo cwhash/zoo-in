@@ -1,0 +1,34 @@
+import { createRouter, createWebHistory } from 'vue-router'
+
+const routes = [
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/LoginView.vue'),
+  },
+  {
+    path: '/',
+    name: 'dashboard',
+    component: () => import('@/views/DashboardView.vue'),
+    meta: { requiresAuth: true, title: 'ZOO-IN' },
+  },
+  {
+    path: '/life-grid',
+    name: 'life-grid',
+    component: () => import('@/views/LifeGridView.vue'),
+    meta: { requiresAuth: true, title: 'Life Grid 2027' },
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('@/views/AdminView.vue'),
+    meta: { requiresAuth: true, title: '管理員後台' },
+  },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+export default router
