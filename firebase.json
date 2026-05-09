@@ -10,7 +10,20 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      ".github/**",
+      "functions/**",
+      "database.rules.json",
+      "storage.rules",
+      "README*.md",
+      "CODEX.md",
+      ".gitignore",
+      "client/node_modules/**",
+      "client/src/**",
+      "client/public/**",
+      "client/package*.json",
+      "client/vite.config.js",
+      "client/.env*"
     ],
     "rewrites": [
       {

@@ -13,30 +13,25 @@ const toast = useToastStore()
 
 const isAdmin = ref(false)
 const loading = ref(true)
-
-// N Task editor state
 const nTaskForms = ref({})
 
-// Reset task
 const resetUid = ref('')
 const resetTaskId = ref('')
 const resetMsg = ref('')
 const resetError = ref(false)
 const resetting = ref(false)
 
-// Delete user
 const deleteUid = ref('')
 const deleteMsg = ref('')
 const deleteError = ref(false)
 const deleting = ref(false)
 
-// Code usage
-const codeUsed = ref(0)
-const codeMax = ref(999)
-
 onMounted(async () => {
   const uid = authStore.user?.uid
-  if (!uid) { loading.value = false; return }
+  if (!uid) {
+    loading.value = false
+    return
+  }
 
   const snap = await get(dbRef(db, `admins/${uid}`))
   isAdmin.value = snap.val() === true
@@ -56,10 +51,10 @@ function initNTaskForms() {
   const tasks = activityStore.activityConfig?.tasks || {}
   const forms = {}
   N_TASKS.forEach((id) => {
-    const t = tasks[id] || {}
+    const task = tasks[id] || {}
     forms[id] = {
-      title: t.title || `官方任務 ${id}`,
-      description: t.description || '',
+      title: task.title || `官方任務 ${id}`,
+      description: task.description || '',
     }
   })
   nTaskForms.value = forms
@@ -137,7 +132,6 @@ async function deleteUser(event) {
   </section>
 
   <section v-else class="admin-grid">
-    <!-- N 任務編輯 -->
     <section class="admin-panel">
       <p class="eyebrow">N 任務編輯</p>
       <h2>官方任務管理</h2>
@@ -175,7 +169,6 @@ async function deleteUser(event) {
       </div>
     </section>
 
-    <!-- 取消完成 -->
     <section class="admin-panel">
       <p class="eyebrow">管理</p>
       <h2>取消任務完成</h2>
@@ -185,7 +178,7 @@ async function deleteUser(event) {
           <input v-model="resetUid" type="text" />
         </label>
         <label class="task-field">
-          <span>任務代號（如 C1, N3）</span>
+          <span>任務代號，例如 C1 或 N3</span>
           <input v-model="resetTaskId" type="text" />
         </label>
         <button class="primary-btn" type="submit" :disabled="resetting" style="margin-top: 8px">
@@ -195,7 +188,6 @@ async function deleteUser(event) {
       </form>
     </section>
 
-    <!-- 刪除會員 -->
     <section class="admin-panel">
       <h2>刪除會員資料</h2>
       <form @submit="deleteUser">

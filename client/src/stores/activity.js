@@ -8,22 +8,23 @@ import {
   onValue,
   query,
   orderByChild,
+  equalTo,
   limitToLast,
+  runTransaction,
 } from 'firebase/database'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { httpsCallable } from 'firebase/functions'
 import { useAuthStore } from './auth'
 import {
   LIFE_GRID_ACTIVITY_ID,
+  LIFE_GRID_MAX_USES,
   TASK_LIST_SEQUENCE,
-  GRID_SEQUENCE,
   FALLBACK_ACTIVITY_CONFIG,
   DEV_FORCE_LIFE_GRID_ACTIVE,
   LIFE_GRID_START_AT,
   LIFE_GRID_END_AT,
-  LEVEL_NAMES,
 } from '@/config/constants'
-import { mergeActivityConfig, sanitizeText } from '@/utils/helpers'
+import { mergeActivityConfig, sanitizeText, hashActivityCode } from '@/utils/helpers'
 
 export const useActivityStore = defineStore('activity', () => {
   const activityConfig = ref({ ...FALLBACK_ACTIVITY_CONFIG })
@@ -34,7 +35,6 @@ export const useActivityStore = defineStore('activity', () => {
 
   const unsubscribers = []
 
-  // --- Computed ---
   const isUnlocked = computed(() => Boolean(activityUnlock.value?.unlocked_at))
 
   const completedTasks = computed(() =>
@@ -43,7 +43,6 @@ export const useActivityStore = defineStore('activity', () => {
 
   const completedCount = computed(() => completedTasks.value.length)
 
-  // --- Helpers ---
   function isLifeGridActive() {
     if (DEV_FORCE_LIFE_GRID_ACTIVE) return true
     const time = Date.now()
@@ -78,49 +77,43 @@ export const useActivityStore = defineStore('activity', () => {
     return isUserEditableTask(taskId) ? task.custom_description || '' : def?.description || ''
   }
 
-  // --- Listeners ---
   function attachListeners() {
     detachListeners()
     const authStore = useAuthStore()
     const uid = authStore.user?.uid
     if (!uid) return
 
-    const unsub1 = onValue(
+    unsubscribers.push(onValue(
       dbRef(db, `activities/${LIFE_GRID_ACTIVITY_ID}`),
       (snapshot) => { activityConfig.value = mergeActivityConfig(snapshot.val()) },
-    )
-    unsubscribers.push(unsub1)
+    ))
 
-    const unsub2 = onValue(
+    unsubscribers.push(onValue(
       dbRef(db, `users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`),
       (snapshot) => { activityUnlock.value = snapshot.val() },
-    )
-    unsubscribers.push(unsub2)
+    ))
 
-    const unsub3 = onValue(
+    unsubscribers.push(onValue(
       dbRef(db, `users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/tasks`),
       (snapshot) => { userTasks.value = snapshot.val() || {} },
-    )
-    unsubscribers.push(unsub3)
+    ))
 
-    const unsub4 = onValue(
+    unsubscribers.push(onValue(
       dbRef(db, `users/${uid}/achievements/${LIFE_GRID_ACTIVITY_ID}`),
       (snapshot) => { userAchievements.value = snapshot.val() || {} },
-    )
-    unsubscribers.push(unsub4)
+    ))
 
     const feedQuery = query(
       dbRef(db, `activity_feeds/${LIFE_GRID_ACTIVITY_ID}`),
       orderByChild('created_at'),
       limitToLast(10),
     )
-    const unsub5 = onValue(feedQuery, (snapshot) => {
+    unsubscribers.push(onValue(feedQuery, (snapshot) => {
       const raw = snapshot.val() || {}
       feedItems.value = Object.values(raw).sort(
         (a, b) => (b.created_at || 0) - (a.created_at || 0),
       )
-    })
-    unsubscribers.push(unsub5)
+    }))
   }
 
   function detachListeners() {
@@ -128,45 +121,60 @@ export const useActivityStore = defineStore('activity', () => {
     unsubscribers.length = 0
   }
 
-  // --- Actions ---
   async function unlockActivity(code) {
     const authStore = useAuthStore()
     const uid = authStore.user?.uid
     if (!uid) throw new Error('請先登入')
+    if (isUnlocked.value) throw new Error('已解鎖此活動。')
 
-    // DEV HARDCODE bypass
-    const DEV_HARDCODE_CODE = '2027-LIFE-GRID'
-    if (code.toUpperCase() === DEV_HARDCODE_CODE) {
-      const unlockPath = `users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`
-      const existing = await get(dbRef(db, unlockPath))
-      if (!existing.exists()) {
-        const time = Date.now()
-        const defaultTasks = Object.fromEntries(
-          TASK_LIST_SEQUENCE.map((taskId) => [taskId, {
-            task_id: taskId,
-            level: taskId[0],
-            status: 'open',
-            created_at: time,
-            updated_at: time,
-          }]),
-        )
-        await update(dbRef(db), {
-          [unlockPath]: {
-            activity_id: LIFE_GRID_ACTIVITY_ID,
-            unlocked_at: time,
-            code: DEV_HARDCODE_CODE,
-          },
-          [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/joined_at`]: time,
-          [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/updated_at`]: time,
-          [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/tasks`]: defaultTasks,
-        })
-      }
-      return { activityName: 'Life Grid 2027' }
+    const submittedHash = await hashActivityCode(code)
+    const codeRef = dbRef(db, `activity_code_hashes/${submittedHash}`)
+    const codeSnapshot = await get(codeRef)
+    const codeConfig = codeSnapshot.val() || {}
+    const activityHash = String(codeConfig.code_hash || submittedHash)
+    const used = Number(codeConfig.used_count || 0)
+    const max = Number(codeConfig.max_uses || LIFE_GRID_MAX_USES)
+
+    if (!codeSnapshot.exists() || codeConfig.active === false || codeConfig.activity_id !== LIFE_GRID_ACTIVITY_ID) {
+      throw new Error('活動代碼不正確或尚未啟用。')
+    }
+    if (submittedHash !== activityHash) {
+      throw new Error('活動代碼不正確。')
+    }
+    if (used >= max) {
+      throw new Error('活動名額已滿。')
     }
 
-    const callUnlock = httpsCallable(functions, 'unlockActivity')
-    const result = await callUnlock({ code })
-    return result.data
+    const usageResult = await runTransaction(dbRef(db, `activity_code_hashes/${submittedHash}/used_count`), (current) => {
+      const count = Number(current || 0)
+      if (count >= max) return
+      return count + 1
+    })
+    if (!usageResult.committed) {
+      throw new Error('活動名額已滿。')
+    }
+
+    const time = Date.now()
+    await update(dbRef(db), {
+      [`users/${uid}/activity_unlocks/${LIFE_GRID_ACTIVITY_ID}`]: {
+        activity_id: LIFE_GRID_ACTIVITY_ID,
+        unlocked_at: time,
+        code_hash: activityHash,
+      },
+      [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/joined_at`]: time,
+      [`users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/updated_at`]: time,
+    })
+
+    await runTransaction(dbRef(db, `activity_join_counters/${LIFE_GRID_ACTIVITY_ID}`), (current) => {
+      const counter = current || {}
+      return {
+        activity_id: LIFE_GRID_ACTIVITY_ID,
+        joined_count: Number(counter.joined_count || 0) + 1,
+        updated_at: time,
+      }
+    })
+
+    return { activityName: activityConfig.value?.name || 'Life Grid 2027' }
   }
 
   async function saveTaskPlan(taskId, title, description) {
@@ -183,7 +191,8 @@ export const useActivityStore = defineStore('activity', () => {
       throw new Error('請先填寫任務標題。')
     }
 
-    const updates = {
+    const taskRef = dbRef(db, `users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/tasks/${taskId}`)
+    await update(taskRef, {
       task_id: taskId,
       level: taskId[0],
       custom_title: sanitizeText(title, 50),
@@ -191,13 +200,7 @@ export const useActivityStore = defineStore('activity', () => {
       status: task.status || 'open',
       locked_at: Date.now(),
       updated_at: Date.now(),
-    }
-
-    const taskRef = dbRef(
-      db,
-      `users/${uid}/activities/${LIFE_GRID_ACTIVITY_ID}/tasks/${taskId}`,
-    )
-    await update(taskRef, updates)
+    })
   }
 
   async function completeTask(taskId, imageBlob) {
@@ -232,7 +235,6 @@ export const useActivityStore = defineStore('activity', () => {
     return getDownloadURL(imgRef)
   }
 
-  // --- Admin Actions ---
   async function adminUpdateNTask(taskId, title, description) {
     const fn = httpsCallable(functions, 'adminUpdateNTask')
     return (await fn({ taskId, title, description })).data
@@ -248,28 +250,28 @@ export const useActivityStore = defineStore('activity', () => {
     return (await fn({ uid: targetUid })).data
   }
 
-  // --- Admin Listeners ---
   function attachAdminListeners() {
     detachListeners()
 
-    const unsub1 = onValue(
-      dbRef(db, `activity_codes/${LIFE_GRID_ACTIVITY_ID}`),
-      (snapshot) => {
-        const code = snapshot.val() || {}
-        activityConfig.value = {
-          ...activityConfig.value,
-          _codeUsed: Number(code.used_count || 0),
-          _codeMax: Number(code.max_uses || 999),
-        }
-      },
+    const codeQuery = query(
+      dbRef(db, 'activity_code_hashes'),
+      orderByChild('activity_id'),
+      equalTo(LIFE_GRID_ACTIVITY_ID),
     )
-    unsubscribers.push(unsub1)
+    unsubscribers.push(onValue(codeQuery, (snapshot) => {
+      const latestCode = Object.values(snapshot.val() || {})
+        .sort((a, b) => Number(b.updated_at || 0) - Number(a.updated_at || 0))[0] || {}
+      activityConfig.value = {
+        ...activityConfig.value,
+        _codeUsed: Number(latestCode.used_count || 0),
+        _codeMax: Number(latestCode.max_uses || LIFE_GRID_MAX_USES),
+      }
+    }))
 
-    const unsub2 = onValue(
+    unsubscribers.push(onValue(
       dbRef(db, `activities/${LIFE_GRID_ACTIVITY_ID}`),
       (snapshot) => { activityConfig.value = mergeActivityConfig(snapshot.val()) },
-    )
-    unsubscribers.push(unsub2)
+    ))
   }
 
   function $reset() {
@@ -282,17 +284,14 @@ export const useActivityStore = defineStore('activity', () => {
   }
 
   return {
-    // State
     activityConfig,
     activityUnlock,
     userTasks,
     userAchievements,
     feedItems,
-    // Computed
     isUnlocked,
     completedTasks,
     completedCount,
-    // Helpers
     isLifeGridActive,
     getTaskDefinition,
     getUserTask,
@@ -300,11 +299,9 @@ export const useActivityStore = defineStore('activity', () => {
     getTaskTitle,
     getTaskDescription,
     getTaskPhotoURL,
-    // Listeners
     attachListeners,
     attachAdminListeners,
     detachListeners,
-    // Actions
     unlockActivity,
     saveTaskPlan,
     completeTask,

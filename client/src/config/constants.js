@@ -1,5 +1,5 @@
-// --- 活動常數 ---
 export const LIFE_GRID_ACTIVITY_ID = 'life_grid_2027'
+export const LIFE_GRID_MAX_USES = 999
 export const LIFE_GRID_START_AT = new Date('2026-07-01T00:00:00+08:00').getTime()
 export const LIFE_GRID_END_AT = new Date('2028-01-01T00:00:00+08:00').getTime()
 export const DEV_FORCE_LIFE_GRID_ACTIVE = import.meta.env.VITE_DEV_FORCE_ACTIVE === 'true'
@@ -8,7 +8,6 @@ export const OUTPUT_IMAGE_WIDTH = 1200
 export const OUTPUT_IMAGE_HEIGHT = 1500
 export const MAX_NICKNAME_LENGTH = 10
 
-// --- 九宮格排列順序 ---
 export const GRID_SEQUENCE = [
   'A1', 'N1', 'C1', 'N2', 'N3',
   'N4', 'B1', 'C2', 'B2', 'N5',
@@ -17,7 +16,6 @@ export const GRID_SEQUENCE = [
   'N8', 'N9', 'C8', 'N10', 'A2',
 ]
 
-// --- 所有任務清單 ---
 export const TASK_LIST_SEQUENCE = [
   'S1',
   'A1', 'A2',
@@ -26,7 +24,7 @@ export const TASK_LIST_SEQUENCE = [
   'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
 ]
 
-export const N_TASKS = ['N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10']
+export const N_TASKS = TASK_LIST_SEQUENCE.filter((taskId) => taskId.startsWith('N'))
 
 export const LEVEL_NAMES = {
   S: '傳奇',
@@ -36,7 +34,6 @@ export const LEVEL_NAMES = {
   N: '日常',
 }
 
-// --- 預設成就 ---
 export const DEFAULT_ACHIEVEMENTS = {
   first_task_completed: {
     title: '萬丈高樓平地起',
@@ -46,7 +43,6 @@ export const DEFAULT_ACHIEVEMENTS = {
   },
 }
 
-// --- 預設任務定義 ---
 export const DEFAULT_TASKS = Object.fromEntries(
   TASK_LIST_SEQUENCE.map((taskId) => {
     const level = taskId[0]
@@ -62,7 +58,6 @@ export const DEFAULT_TASKS = Object.fromEntries(
   }),
 )
 
-// --- 前端 Fallback 活動設定 ---
 export const FALLBACK_ACTIVITY_CONFIG = {
   activity_id: LIFE_GRID_ACTIVITY_ID,
   name: 'Life Grid 2027',

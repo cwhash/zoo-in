@@ -26,6 +26,18 @@ export function sanitizeText(value, maxLength) {
   return Array.from(String(value || '').trim()).slice(0, maxLength).join('')
 }
 
+export function normalizeActivityCode(value) {
+  return String(value || '').trim().toUpperCase()
+}
+
+export async function hashActivityCode(value) {
+  const data = new TextEncoder().encode(normalizeActivityCode(value))
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 export function getDefaultProfile() {
   return {
     public: { nick_name: '匿名' },
@@ -76,7 +88,7 @@ export function formatFeedItem(item) {
   const date = formatDate(item.created_at)
   const nickName = item.nick_name || '匿名'
   if (item.type === 'achievement_unlocked') {
-    return `${date} ${nickName}解鎖成就${item.achievement_title || ''}`
+    return `${date} ${nickName} 解鎖成就 ${item.achievement_title || ''}`
   }
-  return `${date} ${nickName}完成任務${item.task_title || item.task_id || ''}`
+  return `${date} ${nickName} 完成任務 ${item.task_title || item.task_id || ''}`
 }

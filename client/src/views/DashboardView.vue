@@ -47,7 +47,6 @@ function goLifeGrid() {
 
 <template>
   <section class="dashboard-view">
-    <!-- 解鎖面板 -->
     <section class="unlock-panel" aria-labelledby="unlockTitle">
       <p class="eyebrow">活動代碼</p>
       <h2 id="unlockTitle">解鎖活動</h2>
@@ -67,12 +66,11 @@ function goLifeGrid() {
       </p>
     </section>
 
-    <!-- 活動列表 -->
     <section class="activity-panel" aria-labelledby="myActivitiesTitle">
       <div class="section-head">
         <div>
           <p class="eyebrow">我的活動</p>
-          <h2 id="myActivitiesTitle">已解鎖</h2>
+          <h2 id="myActivitiesTitle">已解鎖活動</h2>
         </div>
       </div>
 
@@ -82,7 +80,7 @@ function goLifeGrid() {
             <p class="eyebrow">進行中</p>
             <h3>Life Grid 2027</h3>
             <p class="muted-text">
-              已完成 {{ activityStore.completedCount }} / 25，已解鎖
+              已完成 {{ activityStore.completedCount }} / 25，解鎖
               {{ Object.keys(activityStore.userAchievements || {}).length }} 個成就
             </p>
           </div>
