@@ -19,18 +19,17 @@
     }
   ],
   "hosting": {
-    "public": ".",
+    "public": "client/dist",
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**",
-      ".github/**",
-      "functions/**",
-      "database.rules.json",
-      "storage.rules",
-      "README*.md",
-      "CODEX.md",
-      ".gitignore"
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
   }
 }
