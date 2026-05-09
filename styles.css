@@ -646,6 +646,11 @@ a {
   box-shadow: var(--shadow);
 }
 
+.google-signin-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .login-error {
   min-height: 1.2em;
   margin: 0;

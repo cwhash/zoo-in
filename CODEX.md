@@ -14,12 +14,13 @@ This document defines development notes for the Zoo-In project.
 - Life Grid is one activity inside Zoo-In, currently keyed as `life_grid_2027`.
 - Users land on the Zoo-In activity center after Google sign-in.
 - Locked activities should not appear on the user home page.
-- Activity unlock and task completion should be handled through Cloud Functions, not direct client-only trust.
+- Activity unlock currently uses the Spark/free Realtime Database hash lookup flow.
+- Task completion and destructive admin actions still depend on legacy callable Functions through frontend adapters.
 - Photos belong in Firebase Storage. Realtime Database stores only metadata and paths.
 
 ## Life Grid Rules
 
-- Life Grid 2027 uses activity code `2027-LIFE-GRID`.
+- Life Grid 2027 activity code is configured in the admin backend.
 - Activity period is 2026-07-01 through 2027-12-31.
 - Activity unlock is allowed before the start date; task edits and completion are still limited to the activity period.
 - S/A/B/C tasks are user-defined and lock after first save.
@@ -32,15 +33,21 @@ This document defines development notes for the Zoo-In project.
 
 ## Code Organization
 
-- `index.html`, `script.js`, and `styles.css` implement the user-facing app.
-- `admin.html` and `admin.js` implement the separate admin UI.
-- `functions/` contains Firebase Cloud Functions.
+- `index.html` loads the user-facing platform module from `js/platform/app.js`.
+- `admin.html` loads the separate admin module from `js/admin/app.js`.
+- `script.js` and `admin.js` are thin compatibility entrypoints.
+- `js/shared/` contains shared Firebase and activity-code helpers.
+- `js/activities/life-grid/` contains Life Grid config and adapters.
+- `functions/` contains legacy Firebase Cloud Functions source. The Spark/free workflow does not deploy it.
 - `database.rules.json` and `storage.rules` define Firebase security rules.
 
 ## Quality Checks
 
 - Run `node --check script.js`.
 - Run `node --check admin.js`.
-- Run `node --check functions/index.js`.
+- Run `node --check js/platform/app.js`.
+- Run `node --check js/admin/app.js`.
+- Run `node --check functions/index.js` for legacy source syntax only.
 - Validate JSON files after edits.
+- Keep README files aligned with GitHub Actions deployment behavior.
 - For UI changes, test both the activity center and Life Grid view on mobile-width screens.
