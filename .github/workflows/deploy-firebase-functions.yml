@@ -48,4 +48,4 @@ jobs:
         run: npm run lint
 
       - name: Deploy Functions
-        run: npx firebase-tools@latest deploy --only functions --project zoo-in --non-interactive
+        run: npx firebase-tools@latest deploy --only functions:unlockActivity,functions:completeTask,functions:adminUpdateActivityCode,functions:adminUpdateNTask,functions:adminResetTaskCompletion,functions:adminDeleteUserData --project zoo-in --non-interactive
