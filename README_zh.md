@@ -1,12 +1,12 @@
 # Zoo-In
 
-[English](README.md) | [繁體中文](README_zh-TW.md)
+[English](README.md) | [繁體中文](README_zh.md)
 
 Zoo-In 是以 Firebase 為基礎的活動平台。正式前端是 `client/` 內的 Vue 3 app，建置後部署到 Firebase Hosting：`https://zoo-in.web.app`。
 
 ## 目前產品範圍
 
-- 使用 Firebase Authentication 進行 Google 登入。
+- 使用 Firebase Authentication 的同分頁 redirect flow 進行 Google 登入，不使用 popup 登入。
 - 前端使用 Vue 3 + Vite，搭配 Pinia stores 與 Vue Router。
 - Firebase Hosting 是正式前端。
 - 管理員後台網址是 `/admin`。
@@ -64,7 +64,7 @@ npm ci
 npm run dev
 ```
 
-如果需要在本機測 Google 登入，請在 Firebase Authentication authorized domains 加入 `localhost`。
+Google 登入使用 Firebase redirect sign-in，會在同一個瀏覽器分頁完成流程。如果需要在本機測 Google 登入，請在 Firebase Authentication authorized domains 加入 `localhost`。
 
 ## 建置
 
