@@ -8,6 +8,7 @@ import AppHeader from '@/components/shell/AppHeader.vue'
 import NavDrawer from '@/components/shell/NavDrawer.vue'
 import ProfileDrawer from '@/components/shell/ProfileDrawer.vue'
 import AppToast from '@/components/ui/AppToast.vue'
+import AnimatedLogo from '@/components/shell/AnimatedLogo.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -34,8 +35,9 @@ watch(
 </script>
 
 <template>
-  <div v-if="authStore.loading" class="login-screen">
-    <p style="color: var(--muted)">載入中...</p>
+  <div v-if="authStore.loading" class="login-screen loading-screen">
+    <AnimatedLogo :size="72" />
+    <p class="loading-copy">載入中</p>
   </div>
   <template v-else>
     <template v-if="authStore.isAuthenticated">

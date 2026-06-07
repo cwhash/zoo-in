@@ -1,6 +1,7 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
+import AnimatedLogo from './AnimatedLogo.vue'
 
 defineEmits(['openNav', 'openProfile'])
 
@@ -19,7 +20,10 @@ const route = useRoute()
       <span /><span /><span />
     </button>
 
-    <h1>{{ route.meta.title || 'ZOO-IN' }}</h1>
+    <div class="brand">
+      <AnimatedLogo :size="32" />
+      <h1>{{ route.meta.title || 'ZOO-IN' }}</h1>
+    </div>
 
     <button
       class="avatar-button"

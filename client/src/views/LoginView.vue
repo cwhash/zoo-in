@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import AnimatedLogo from '@/components/shell/AnimatedLogo.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -23,10 +24,7 @@ async function login() {
   <div class="login-screen">
     <section class="login-card" aria-labelledby="loginTitle">
       <div class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" role="img">
-          <circle cx="11" cy="11" r="6.5" />
-          <path d="M16 16l4.5 4.5" />
-        </svg>
+        <AnimatedLogo :size="64" />
       </div>
       <h1 id="loginTitle">ZOO-IN</h1>
       <button class="google-signin-btn" type="button" @click="login">
