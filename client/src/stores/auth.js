@@ -26,6 +26,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login() {
     const provider = new GoogleAuthProvider()
+    provider.setCustomParameters({
+      prompt: 'select_account',
+    })
     await signInWithRedirect(auth, provider)
   }
 
