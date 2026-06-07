@@ -1,6 +1,14 @@
 <script setup>
-import { ref, onBeforeUnmount } from 'vue'
-import { OUTPUT_IMAGE_WIDTH, OUTPUT_IMAGE_HEIGHT } from '@/config/constants'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { Cropper } from 'vue-advanced-cropper'
+import 'vue-advanced-cropper/dist/style.css'
+import {
+  OUTPUT_IMAGE_WIDTH,
+  OUTPUT_IMAGE_HEIGHT,
+  OUTPUT_IMAGE_QUALITY,
+  MAX_UPLOAD_IMAGE_BYTES,
+  MAX_SOURCE_IMAGE_BYTES,
+} from '@/config/constants'
 
 const props = defineProps({
   canComplete: { type: Boolean, default: false },
@@ -8,126 +16,303 @@ const props = defineProps({
 })
 const emit = defineEmits(['complete'])
 
-const selectedImage = ref(null)
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const ACCEPTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
+const ACCEPTED_IMAGE_INPUT =
+  'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp'
+const MIN_ZOOM = 1
+const MAX_ZOOM = 3
+const IMAGE_ASPECT_RATIO = OUTPUT_IMAGE_WIDTH / OUTPUT_IMAGE_HEIGHT
+
+const cropperRef = ref(null)
+const fileInputRef = ref(null)
 const selectedImageUrl = ref(null)
-const cropVisible = ref(false)
-const cropState = ref({ zoom: 1, x: 0, y: 0 })
+const selectedImageName = ref('')
+const cropError = ref('')
+const loadingImage = ref(false)
+const imageReady = ref(false)
+const zoomValue = ref(MIN_ZOOM)
+const baseCropWidth = ref(null)
+
+const hasImage = computed(() => Boolean(selectedImageUrl.value))
+const completeDisabled = computed(
+  () => !props.canComplete || props.completing || loadingImage.value || Boolean(cropError.value),
+)
+
+const stencilProps = {
+  aspectRatio: IMAGE_ASPECT_RATIO,
+  handlers: {},
+  movable: false,
+  resizable: false,
+}
+
+const cropCanvasOptions = {
+  width: OUTPUT_IMAGE_WIDTH,
+  height: OUTPUT_IMAGE_HEIGHT,
+  imageSmoothingEnabled: true,
+  imageSmoothingQuality: 'high',
+  fillColor: '#ffffff',
+}
+
+const resizeImageOptions = {
+  wheel: true,
+  touch: true,
+  adjustStencil: false,
+}
+
+const moveImageOptions = {
+  mouse: true,
+  touch: true,
+}
+
+function getStencilSize({ boundaries }) {
+  const maxWidth = Math.min(boundaries.width * 0.86, boundaries.height * IMAGE_ASPECT_RATIO * 0.9, 280)
+  return {
+    width: maxWidth,
+    height: maxWidth / IMAGE_ASPECT_RATIO,
+  }
+}
+
+function formatFileSize(bytes) {
+  const mb = bytes / (1024 * 1024)
+  if (mb >= 1) return `${Math.round(mb)}MB`
+  return `${Math.round(bytes / 1024)}KB`
+}
+
+function isSupportedImage(file) {
+  const type = file.type.toLowerCase()
+  const name = file.name.toLowerCase()
+  return (
+    ACCEPTED_IMAGE_TYPES.includes(type) ||
+    ACCEPTED_IMAGE_EXTENSIONS.some((extension) => name.endsWith(extension))
+  )
+}
+
+function getUnsupportedImageMessage(file) {
+  const name = file.name.toLowerCase()
+  const type = file.type.toLowerCase()
+  if (type.includes('heic') || type.includes('heif') || name.endsWith('.heic') || name.endsWith('.heif')) {
+    return '目前不支援 HEIC/HEIF，請改用 JPG、PNG 或 WebP。'
+  }
+  return '請選擇 JPG、PNG 或 WebP 圖片。'
+}
+
+function openFilePicker() {
+  if (!props.canComplete || props.completing) return
+  fileInputRef.value?.click()
+}
 
 function handleFileChange(event) {
-  const file = event.target.files?.[0]
+  const input = event.target
+  const file = input.files?.[0]
+  input.value = ''
   if (!file) return
-  resetCrop()
 
+  if (!isSupportedImage(file)) {
+    resetCrop({ clearInput: false })
+    cropError.value = getUnsupportedImageMessage(file)
+    return
+  }
+  if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+    resetCrop({ clearInput: false })
+    cropError.value = `照片原始檔超過 ${formatFileSize(MAX_SOURCE_IMAGE_BYTES)}，請先壓縮或換一張照片。`
+    return
+  }
+
+  resetCrop({ clearInput: false })
+  cropError.value = ''
+  loadingImage.value = true
+  imageReady.value = false
+  selectedImageName.value = file.name
   selectedImageUrl.value = URL.createObjectURL(file)
-  const img = new Image()
-  img.onload = () => {
-    selectedImage.value = img
-    cropVisible.value = true
-  }
-  img.src = selectedImageUrl.value
 }
 
-function resetCrop() {
+function resetCrop({ clearInput = true } = {}) {
   if (selectedImageUrl.value) URL.revokeObjectURL(selectedImageUrl.value)
-  selectedImage.value = null
   selectedImageUrl.value = null
-  cropVisible.value = false
-  cropState.value = { zoom: 1, x: 0, y: 0 }
+  selectedImageName.value = ''
+  loadingImage.value = false
+  imageReady.value = false
+  zoomValue.value = MIN_ZOOM
+  baseCropWidth.value = null
+  if (clearInput && fileInputRef.value) fileInputRef.value.value = ''
 }
 
-onBeforeUnmount(() => {
-  if (selectedImageUrl.value) URL.revokeObjectURL(selectedImageUrl.value)
-})
-
-function getImageStyle() {
-  const img = selectedImage.value
-  const frame = document.querySelector('.crop-frame')
-  if (!img || !frame) return {}
-
-  const rect = frame.getBoundingClientRect()
-  const baseScale =
-    Math.max(rect.width / img.naturalWidth, rect.height / img.naturalHeight) *
-    cropState.value.zoom
-  const dw = img.naturalWidth * baseScale
-  const dh = img.naturalHeight * baseScale
-  const maxX = Math.max(0, (dw - rect.width) / 2)
-  const maxY = Math.max(0, (dh - rect.height) / 2)
-
-  return {
-    width: `${dw}px`,
-    height: `${dh}px`,
-    transform: `translate(calc(-50% + ${(cropState.value.x / 100) * maxX}px), calc(-50% + ${(cropState.value.y / 100) * maxY}px))`,
-  }
+function resetEditor() {
+  cropperRef.value?.reset()
+  zoomValue.value = MIN_ZOOM
+  baseCropWidth.value = null
 }
 
-function getCroppedBlob() {
+function rotateImage(angle) {
+  if (!imageReady.value) return
+  baseCropWidth.value = null
+  zoomValue.value = MIN_ZOOM
+  cropperRef.value?.rotate(angle)
+}
+
+function handleCropperReady() {
+  loadingImage.value = false
+  imageReady.value = true
+  cropError.value = ''
+}
+
+function handleCropperError() {
+  resetCrop()
+  cropError.value = '照片無法讀取，請改用 JPG、PNG 或 WebP。'
+}
+
+function handleCropperChange({ coordinates }) {
+  if (!coordinates?.width || !imageReady.value) return
+  if (!baseCropWidth.value) baseCropWidth.value = coordinates.width
+  const currentZoom = baseCropWidth.value / coordinates.width
+  zoomValue.value = Number(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, currentZoom)).toFixed(2))
+}
+
+function handleZoomInput(event) {
+  const nextZoom = Number(event.target.value)
+  if (!Number.isFinite(nextZoom) || !cropperRef.value || !imageReady.value) return
+
+  const factor = nextZoom / zoomValue.value
+  zoomValue.value = nextZoom
+  if (Number.isFinite(factor) && factor > 0) cropperRef.value.zoom(factor)
+}
+
+function canvasToBlob(canvas, quality) {
   return new Promise((resolve, reject) => {
-    const img = selectedImage.value
-    if (!img) { resolve(null); return }
-
-    const canvas = document.createElement('canvas')
-    canvas.width = OUTPUT_IMAGE_WIDTH
-    canvas.height = OUTPUT_IMAGE_HEIGHT
-    const ctx = canvas.getContext('2d')
-
-    const sourceScale =
-      Math.max(OUTPUT_IMAGE_WIDTH / img.naturalWidth, OUTPUT_IMAGE_HEIGHT / img.naturalHeight) *
-      cropState.value.zoom
-    const sw = OUTPUT_IMAGE_WIDTH / sourceScale
-    const sh = OUTPUT_IMAGE_HEIGHT / sourceScale
-    const rangeX = Math.max(0, (img.naturalWidth - sw) / 2)
-    const rangeY = Math.max(0, (img.naturalHeight - sh) / 2)
-    const cx = img.naturalWidth / 2 - (cropState.value.x / 100) * rangeX
-    const cy = img.naturalHeight / 2 - (cropState.value.y / 100) * rangeY
-    const sx = Math.max(0, Math.min(img.naturalWidth - sw, cx - sw / 2))
-    const sy = Math.max(0, Math.min(img.naturalHeight - sh, cy - sh / 2))
-
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, OUTPUT_IMAGE_WIDTH, OUTPUT_IMAGE_HEIGHT)
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Image export failed'))),
+      (blob) => (blob ? resolve(blob) : reject(new Error('照片輸出失敗，請重新選擇照片。'))),
       'image/jpeg',
-      0.85,
+      quality,
     )
   })
 }
+
+async function getCroppedBlob() {
+  if (!selectedImageUrl.value) return null
+  if (!imageReady.value || loadingImage.value) {
+    throw new Error('照片仍在讀取中，請稍後再試。')
+  }
+
+  const result = cropperRef.value?.getResult()
+  const canvas = result?.canvas
+  if (!canvas) throw new Error('照片裁切失敗，請重新選擇照片。')
+
+  const qualitySteps = [OUTPUT_IMAGE_QUALITY, 0.8, 0.72, 0.64]
+  for (const quality of qualitySteps) {
+    const blob = await canvasToBlob(canvas, quality)
+    if (blob.size <= MAX_UPLOAD_IMAGE_BYTES) return blob
+  }
+
+  throw new Error('照片壓縮後仍超過 3MB，請先壓縮或換一張照片。')
+}
+
+onBeforeUnmount(() => {
+  resetCrop()
+})
 
 defineExpose({ getCroppedBlob })
 </script>
 
 <template>
   <section class="cropper">
-    <label class="task-field">
-      <span>完成照片，僅本人與管理員可見</span>
-      <input type="file" accept="image/*" :disabled="!canComplete" @change="handleFileChange" />
-    </label>
+    <div class="upload-field">
+      <input
+        ref="fileInputRef"
+        class="file-input-control"
+        type="file"
+        :accept="ACCEPTED_IMAGE_INPUT"
+        :disabled="!canComplete || completing"
+        @change="handleFileChange"
+      />
+      <button
+        class="ghost-btn upload-select-btn"
+        type="button"
+        :disabled="!canComplete || completing"
+        @click="openFilePicker"
+      >
+        {{ hasImage ? '重新選圖' : '選擇照片' }}
+      </button>
+      <span class="upload-meta">JPG / PNG / WebP · 4:5</span>
+    </div>
 
-    <div v-if="cropVisible" class="cropper">
-      <div class="crop-frame">
-        <img :src="selectedImageUrl" alt="" :style="getImageStyle()" />
+    <p v-if="cropError" class="form-message error">{{ cropError }}</p>
+
+    <div v-if="hasImage" class="cropper-editor">
+      <div class="cropper-stage">
+        <Cropper
+          ref="cropperRef"
+          class="advanced-cropper"
+          :src="selectedImageUrl"
+          :stencil-props="stencilProps"
+          :stencil-size="getStencilSize"
+          :canvas="cropCanvasOptions"
+          :resize-image="resizeImageOptions"
+          :move-image="moveImageOptions"
+          :check-orientation="true"
+          :auto-zoom="true"
+          :transitions="true"
+          image-restriction="stencil"
+          default-boundaries="fill"
+          @ready="handleCropperReady"
+          @error="handleCropperError"
+          @change="handleCropperChange"
+        />
+        <div v-if="loadingImage" class="cropper-loading">讀取照片...</div>
       </div>
-      <div class="crop-controls">
-        <label>
-          縮放
-          <input v-model.number="cropState.zoom" type="range" min="1" max="2.4" step="0.01" />
-        </label>
-        <label>
-          左右
-          <input v-model.number="cropState.x" type="range" min="-100" max="100" step="1" />
-        </label>
-        <label>
-          上下
-          <input v-model.number="cropState.y" type="range" min="-100" max="100" step="1" />
-        </label>
+
+      <div class="crop-toolbar" aria-label="照片編輯工具">
+        <button
+          class="crop-tool-btn"
+          type="button"
+          aria-label="向左旋轉 90 度"
+          :disabled="!imageReady"
+          @click="rotateImage(-90)"
+        >
+          ↶
+        </button>
+        <button
+          class="crop-tool-btn"
+          type="button"
+          aria-label="向右旋轉 90 度"
+          :disabled="!imageReady"
+          @click="rotateImage(90)"
+        >
+          ↷
+        </button>
+        <button
+          class="crop-tool-btn crop-tool-btn-wide"
+          type="button"
+          :disabled="!imageReady"
+          @click="resetEditor"
+        >
+          重設
+        </button>
       </div>
+
+      <label class="crop-zoom-control">
+        <span>縮放</span>
+        <input
+          :value="zoomValue"
+          type="range"
+          :min="MIN_ZOOM"
+          :max="MAX_ZOOM"
+          step="0.01"
+          :disabled="!imageReady"
+          @input="handleZoomInput"
+        />
+      </label>
+
+      <p v-if="selectedImageName" class="upload-filename">{{ selectedImageName }}</p>
     </div>
 
     <button
       class="primary-btn"
       type="button"
-      :disabled="!canComplete || completing"
+      :disabled="completeDisabled"
       @click="emit('complete')"
     >
-      {{ completing ? '處理中...' : '完成任務' }}
+      {{ completing ? '處理中...' : loadingImage ? '讀取照片...' : '完成任務' }}
     </button>
     <p v-if="!canComplete" class="muted-text">請先填寫並鎖定任務內容。</p>
   </section>
