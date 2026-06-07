@@ -1,47 +1,17 @@
 <script setup>
-<<<<<<< HEAD
+/**
+ * Zoo-In pixel logo: magnifying glass plus cycling silhouettes.
+ * Drawn on a 16x16 grid with step animations to keep the pixel look crisp.
+ */
 const props = defineProps({
   size: {
     type: [Number, String],
-    default: 48,
+    default: 40,
   },
 })
 
-const logoSize = `${props.size}`.endsWith('px') ? `${props.size}` : `${props.size}px`
-</script>
-
-<template>
-  <span
-    class="zoo-logo"
-    :style="{ width: logoSize, height: logoSize }"
-    aria-hidden="true"
-  >
-    <svg
-      viewBox="0 0 64 64"
-      fill="none"
-      focusable="false"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path class="logo-shadow" d="M14 10h26v4h4v26h-4v4H14v-4h-4V14h4v-4Z" />
-      <path class="logo-frame" d="M12 8h28v4h4v28h-4v4H12v-4H8V12h4V8Z" />
-      <path class="logo-lens" d="M18 18h18v4h4v18h-4v4H18v-4h-4V22h4v-4Z" />
-      <path class="logo-glass" d="M20 20h14v4h4v14h-4v4H20v-4h-4V24h4v-4Z" />
-      <path class="logo-handle" d="M40 40h6v4h4v4h4v8h-8v-4h-4v-4h-4v-6h2v-2Z" />
-      <path class="logo-pixel logo-pixel-a" d="M48 8h6v6h-6V8Z" />
-      <path class="logo-pixel logo-pixel-b" d="M8 50h6v6H8v-6Z" />
-    </svg>
-  </span>
-=======
-/**
- * Zoo-In 像素風動態 Logo：放大鏡 + 動物剪影輪播
- * 動物序列：猴子 -> ET -> 蝴蝶 -> 鯨魚 -> 貓 -> 鳥
- * 以 16x16 方格繪製，使用 steps() 硬切換，避免柔化與抗鋸齒感。
- */
-defineProps({
-  size: { type: Number, default: 40 },
-})
-
 const pixelSize = 6
+const logoSize = `${props.size}`.endsWith('px') ? `${props.size}` : `${props.size}px`
 
 function row(y, from, to) {
   return Array.from({ length: to - from + 1 }, (_, index) => [from + index, y])
@@ -90,7 +60,6 @@ const sparklePixels = [
 const animals = [
   {
     name: 'monkey',
-    label: '猴子',
     className: 'animal-1',
     pixels: [
       [4, 3], [9, 3],
@@ -109,7 +78,6 @@ const animals = [
   },
   {
     name: 'alien',
-    label: 'ET',
     className: 'animal-2',
     pixels: [
       ...row(3, 5, 8),
@@ -128,7 +96,6 @@ const animals = [
   },
   {
     name: 'butterfly',
-    label: '蝴蝶',
     className: 'animal-3',
     pixels: [
       [6, 3], [7, 3],
@@ -147,7 +114,6 @@ const animals = [
   },
   {
     name: 'whale',
-    label: '鯨魚',
     className: 'animal-4',
     pixels: [
       [6, 3],
@@ -167,7 +133,6 @@ const animals = [
   },
   {
     name: 'cat',
-    label: '貓',
     className: 'animal-5',
     pixels: [
       [4, 3], [9, 3],
@@ -186,7 +151,6 @@ const animals = [
   },
   {
     name: 'bird',
-    label: '鳥',
     className: 'animal-6',
     pixels: [
       [6, 3], [7, 3],
@@ -210,7 +174,7 @@ const animals = [
 <template>
   <div
     class="zoo-logo"
-    :style="{ width: size + 'px', height: size + 'px' }"
+    :style="{ width: logoSize, height: logoSize }"
     role="img"
     aria-label="Zoo-In 像素風 Logo"
   >
@@ -308,26 +272,16 @@ const animals = [
       </g>
     </svg>
   </div>
->>>>>>> feat/client_animated_logo
 </template>
 
 <style scoped>
 .zoo-logo {
-<<<<<<< HEAD
-  display: inline-block;
-  flex: 0 0 auto;
-  color: var(--zoo-logo-color, currentColor);
-  line-height: 0;
-  transform-origin: center;
-  animation: zoo-logo-idle 1.8s steps(2, end) infinite;
-=======
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--zoo-logo-color, var(--primary));
   flex-shrink: 0;
   image-rendering: pixelated;
->>>>>>> feat/client_animated_logo
 }
 
 .zoo-logo svg {
@@ -337,50 +291,6 @@ const animals = [
   overflow: visible;
 }
 
-<<<<<<< HEAD
-.logo-shadow {
-  fill: rgba(29, 36, 48, 0.2);
-}
-
-.logo-frame,
-.logo-handle,
-.logo-pixel {
-  fill: currentColor;
-}
-
-.logo-lens {
-  fill: var(--zoo-lens-fill, var(--surface, #fffdf7));
-}
-
-.logo-glass {
-  fill: color-mix(in srgb, var(--zoo-lens-fill, #fffdf7) 78%, currentColor 22%);
-}
-
-.logo-pixel-a {
-  animation: zoo-logo-blink 1.2s steps(1, end) infinite;
-}
-
-.logo-pixel-b {
-  animation: zoo-logo-blink 1.2s steps(1, end) infinite reverse;
-}
-
-@keyframes zoo-logo-idle {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(1px, -1px); }
-}
-
-@keyframes zoo-logo-blink {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0.35; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .zoo-logo,
-  .logo-pixel-a,
-  .logo-pixel-b {
-    animation: none;
-  }
-=======
 .pixel-shadow {
   fill: var(--zoo-logo-shadow, rgba(29, 36, 48, 0.22));
 }
@@ -422,6 +332,16 @@ const animals = [
 @keyframes pixel-spark {
   0%, 46% { opacity: 0.85; }
   47%, 100% { opacity: 0; }
->>>>>>> feat/client_animated_logo
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animal,
+  .pixel-spark {
+    animation: none;
+  }
+
+  .animal-1 {
+    opacity: 1;
+  }
 }
 </style>
