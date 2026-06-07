@@ -64,7 +64,7 @@ npm ci
 npm run dev
 ```
 
-For Google sign-in, the app uses Firebase redirect sign-in in the same browser tab. Add `localhost` in Firebase Authentication authorized domains if local sign-in is needed.
+For Google sign-in, the app uses Firebase redirect sign-in in the same browser tab. On Firebase Hosting domains, the app sets `authDomain` to the current hosting domain so the auth helper runs on the same site. Add `localhost` in Firebase Authentication authorized domains if local sign-in is needed.
 
 ## Build
 
