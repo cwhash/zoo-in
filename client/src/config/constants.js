@@ -4,8 +4,11 @@ export const LIFE_GRID_START_AT = new Date('2026-07-01T00:00:00+08:00').getTime(
 export const LIFE_GRID_END_AT = new Date('2028-01-01T00:00:00+08:00').getTime()
 export const DEV_FORCE_LIFE_GRID_ACTIVE = import.meta.env.VITE_DEV_FORCE_ACTIVE === 'true'
 
-export const OUTPUT_IMAGE_WIDTH = 1200
-export const OUTPUT_IMAGE_HEIGHT = 1500
+export const OUTPUT_IMAGE_WIDTH = 1080
+export const OUTPUT_IMAGE_HEIGHT = 1350
+export const OUTPUT_IMAGE_QUALITY = 0.85
+export const MAX_UPLOAD_IMAGE_BYTES = 3 * 1024 * 1024
+export const MAX_SOURCE_IMAGE_BYTES = 20 * 1024 * 1024
 export const MAX_NICKNAME_LENGTH = 10
 
 export const GRID_SEQUENCE = [

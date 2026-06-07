@@ -21,6 +21,7 @@ import {
   DEV_FORCE_LIFE_GRID_ACTIVE,
   LIFE_GRID_START_AT,
   LIFE_GRID_END_AT,
+  MAX_UPLOAD_IMAGE_BYTES,
 } from '@/config/constants'
 import { mergeActivityConfig, sanitizeText } from '@/utils/helpers'
 
@@ -161,7 +162,7 @@ export const useActivityStore = defineStore('activity', () => {
     const uid = authStore.user?.uid
     if (!uid) throw new Error('請先登入')
 
-    if (imageBlob.size > 3 * 1024 * 1024) {
+    if (imageBlob.size > MAX_UPLOAD_IMAGE_BYTES) {
       throw new Error('照片檔案太大，請壓縮到 3MB 以下再上傳')
     }
 

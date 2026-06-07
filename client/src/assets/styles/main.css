@@ -455,13 +455,39 @@ a { color: inherit; }
 }
 
 /* ===================== Image Crop ===================== */
-.cropper, .crop-controls { display: grid; gap: 10px; }
+.cropper, .cropper-editor { display: grid; gap: 10px; }
 
-.crop-frame {
+.upload-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.file-input-control {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.upload-select-btn { min-width: 112px; }
+
+.upload-meta, .upload-filename {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cropper-stage {
   position: relative;
-  width: min(100%, 260px);
-  aspect-ratio: 4 / 5;
-  margin: 0 auto;
   overflow: hidden;
   border: 2px solid var(--border);
   border-radius: var(--pixel-radius);
@@ -469,19 +495,70 @@ a { color: inherit; }
   box-shadow: var(--shadow-soft);
 }
 
-.crop-frame img {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  max-width: none;
-  transform-origin: center;
-  user-select: none;
-  pointer-events: none;
+.advanced-cropper {
+  width: 100%;
+  height: min(62vh, 420px);
+  min-height: 330px;
+  background: #111;
 }
 
-.crop-controls label {
+.advanced-cropper .vue-rectangle-stencil {
+  outline: 2px solid rgba(255, 255, 255, 0.88);
+  outline-offset: -2px;
+}
+
+.advanced-cropper .vue-rectangle-stencil__preview {
+  border: 2px solid var(--level-s);
+}
+
+.cropper-loading {
+  position: absolute;
+  inset: 0;
   display: grid;
-  gap: 4px;
+  place-items: center;
+  background: rgba(17, 17, 17, 0.68);
+  color: #fff;
+  font-weight: 900;
+}
+
+.crop-toolbar {
+  display: grid;
+  grid-template-columns: 44px 44px minmax(72px, 1fr);
+  gap: 8px;
+}
+
+.crop-tool-btn {
+  min-width: 44px;
+  min-height: 44px;
+  border: 2px solid var(--border);
+  border-radius: var(--pixel-radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.crop-tool-btn-wide {
+  padding: 0 12px;
+  font-size: 0.88rem;
+}
+
+.crop-tool-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.crop-tool-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.crop-zoom-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 800;
