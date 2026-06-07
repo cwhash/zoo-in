@@ -4,9 +4,15 @@ import { getDatabase } from 'firebase/database'
 import { getStorage } from 'firebase/storage'
 import { getFunctions } from 'firebase/functions'
 
+const defaultAuthDomain = 'zoo-in.firebaseapp.com'
+const sameTabRedirectDomains = new Set(['zoo-in.web.app', 'zoo-in.firebaseapp.com'])
+const currentHostname = window.location.hostname
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: 'zoo-in.firebaseapp.com',
+  authDomain: sameTabRedirectDomains.has(currentHostname)
+    ? window.location.host
+    : defaultAuthDomain,
   databaseURL: 'https://zoo-in-default-rtdb.asia-southeast1.firebasedatabase.app',
   projectId: 'zoo-in',
   storageBucket: 'zoo-in.firebasestorage.app',

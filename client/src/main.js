@@ -14,7 +14,11 @@ app.use(router)
 const authStore = useAuthStore()
 
 authStore.init().then(async () => {
-  await authStore.completeRedirectLogin()
+  try {
+    await authStore.completeRedirectLogin()
+  } catch (err) {
+    console.error('Firebase redirect sign-in failed', err)
+  }
 
   // Router guard — must run after auth is resolved
   router.beforeEach((to) => {

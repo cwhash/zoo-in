@@ -64,7 +64,7 @@ npm ci
 npm run dev
 ```
 
-Google 登入使用 Firebase redirect sign-in，會在同一個瀏覽器分頁完成流程。如果需要在本機測 Google 登入，請在 Firebase Authentication authorized domains 加入 `localhost`。
+Google 登入使用 Firebase redirect sign-in，會在同一個瀏覽器分頁完成流程。在 Firebase Hosting 網域上，前端會把 `authDomain` 設為目前 hosting 網域，讓 auth helper 以同站方式運作。如果需要在本機測 Google 登入，請在 Firebase Authentication authorized domains 加入 `localhost`。
 
 ## 建置
 

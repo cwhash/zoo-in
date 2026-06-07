@@ -1,11 +1,23 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AnimatedLogo from '@/components/shell/AnimatedLogo.vue'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const errorMsg = ref('')
 const signingIn = ref(false)
+
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (isAuthenticated) {
+      router.replace({ name: 'dashboard' })
+    }
+  },
+  { immediate: true },
+)
 
 async function login() {
   errorMsg.value = ''
