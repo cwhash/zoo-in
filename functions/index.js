@@ -36,11 +36,14 @@ const TASK_LIST_SEQUENCE = [
   'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10',
 ];
 
+const ACHIEVEMENT_RARITIES = new Set(['common', 'rare', 'epic', 'legendary', 'secret']);
+
 const DEFAULT_ACHIEVEMENTS = {
   first_task_completed: {
     title: '第一個任務完成',
     description: '完成 Life Grid 的第一個任務。',
     hidden: true,
+    rarity: 'common',
     condition: {
       type: 'completed_task_count',
       value: 1,
@@ -113,6 +116,27 @@ function sanitizeText(value, maxLength) {
   return Array.from(String(value || '').trim()).slice(0, maxLength).join('');
 }
 
+function normalizeAchievementRarity(value) {
+  const rarity = String(value || '').trim().toLowerCase();
+  return ACHIEVEMENT_RARITIES.has(rarity) ? rarity : 'common';
+}
+
+function mergeAchievementDefinitions(existing = {}) {
+  const ids = new Set([
+    ...Object.keys(DEFAULT_ACHIEVEMENTS),
+    ...Object.keys(existing || {}),
+  ]);
+  return Object.fromEntries(Array.from(ids).map((id) => {
+    const fallback = DEFAULT_ACHIEVEMENTS[id] || {};
+    const raw = existing?.[id] || {};
+    return [id, {
+      ...fallback,
+      ...raw,
+      rarity: normalizeAchievementRarity(raw.rarity || fallback.rarity),
+    }];
+  }));
+}
+
 function getDefaultUserTasks() {
   const now = Date.now();
   return Object.fromEntries(TASK_LIST_SEQUENCE.map((taskId) => [taskId, {
@@ -140,10 +164,7 @@ async function ensureActivityConfig() {
       ...DEFAULT_TASKS,
       ...(existing.tasks || {}),
     },
-    achievements: {
-      ...DEFAULT_ACHIEVEMENTS,
-      ...(existing.achievements || {}),
-    },
+    achievements: mergeAchievementDefinitions(existing.achievements),
     updated_at: Date.now(),
   };
 
@@ -356,7 +377,7 @@ async function evaluateAchievements(uid, activity, sourceTaskId) {
 
   const earnedSnapshot = await db.ref(`users/${uid}/achievements/${LIFE_GRID_ACTIVITY_ID}`).once('value');
   const earned = earnedSnapshot.val() || {};
-  const achievements = activity.achievements || DEFAULT_ACHIEVEMENTS;
+  const achievements = mergeAchievementDefinitions(activity.achievements);
   const unlocked = [];
   const updates = {};
   const time = Date.now();
@@ -367,9 +388,11 @@ async function evaluateAchievements(uid, activity, sourceTaskId) {
     if (earned[achievementId]) return;
     if (!conditionMet(achievement.condition, completedTasks, sourceTaskId)) return;
 
+    const rarity = normalizeAchievementRarity(achievement.rarity);
     const achievementRecord = {
       title: achievement.title,
       description: achievement.description || '',
+      rarity,
       earned_at: time,
       source: {
         type: 'task_completion',
@@ -384,9 +407,10 @@ async function evaluateAchievements(uid, activity, sourceTaskId) {
       nick_name: nickName,
       achievement_id: achievementId,
       achievement_title: achievement.title,
+      achievement_rarity: rarity,
       created_at: time,
     };
-    unlocked.push({ achievementId, title: achievement.title });
+    unlocked.push({ achievementId, title: achievement.title, rarity });
   });
 
   if (Object.keys(updates).length > 0) {
