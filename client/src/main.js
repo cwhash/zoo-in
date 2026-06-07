@@ -13,7 +13,9 @@ app.use(router)
 
 const authStore = useAuthStore()
 
-authStore.init().then(() => {
+authStore.init().then(async () => {
+  await authStore.completeRedirectLogin()
+
   // Router guard — must run after auth is resolved
   router.beforeEach((to) => {
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {

@@ -3,8 +3,9 @@ import { ref, computed } from 'vue'
 import { auth } from '@/firebase'
 import {
   onAuthStateChanged,
-  signInWithPopup,
+  getRedirectResult,
   GoogleAuthProvider,
+  signInWithRedirect,
   signOut,
 } from 'firebase/auth'
 
@@ -25,7 +26,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login() {
     const provider = new GoogleAuthProvider()
-    await signInWithPopup(auth, provider)
+    await signInWithRedirect(auth, provider)
+  }
+
+  async function completeRedirectLogin() {
+    const result = await getRedirectResult(auth)
+    if (result?.user) {
+      user.value = result.user
+    }
+    return result
   }
 
   async function logout() {
@@ -33,5 +42,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, loading, isAuthenticated, init, login, logout }
+  return { user, loading, isAuthenticated, init, login, completeRedirectLogin, logout }
 })

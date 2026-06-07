@@ -1,12 +1,12 @@
 # Zoo-In
 
-[English](README.md) | [繁體中文](README_zh-TW.md)
+[English](README.md) | [繁體中文](README_zh.md)
 
 Zoo-In is a Firebase-based activity platform. The production frontend is a Vue 3 app built from `client/` and deployed to Firebase Hosting at `https://zoo-in.web.app`.
 
 ## Current Product Scope
 
-- Google sign-in through Firebase Authentication.
+- Google sign-in through Firebase Authentication using same-tab redirect sign-in, not popup sign-in.
 - Vue 3 + Vite frontend with Pinia stores and Vue Router.
 - Firebase Hosting is the production frontend target.
 - Admin backend route is `/admin`.
@@ -64,7 +64,7 @@ npm ci
 npm run dev
 ```
 
-For Google sign-in, add `localhost` in Firebase Authentication authorized domains if local sign-in is needed.
+For Google sign-in, the app uses Firebase redirect sign-in in the same browser tab. Add `localhost` in Firebase Authentication authorized domains if local sign-in is needed.
 
 ## Build
 
