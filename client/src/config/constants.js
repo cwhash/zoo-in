@@ -37,11 +37,40 @@ export const LEVEL_NAMES = {
   N: '日常',
 }
 
+export const ACHIEVEMENT_RARITIES = {
+  common: {
+    label: '普通',
+    badge: 'COMMON',
+    rank: 1,
+  },
+  rare: {
+    label: '稀有',
+    badge: 'RARE',
+    rank: 2,
+  },
+  epic: {
+    label: '史詩',
+    badge: 'EPIC',
+    rank: 3,
+  },
+  legendary: {
+    label: '傳奇',
+    badge: 'LEGEND',
+    rank: 4,
+  },
+  secret: {
+    label: '隱藏',
+    badge: 'SECRET',
+    rank: 5,
+  },
+}
+
 export const DEFAULT_ACHIEVEMENTS = {
   first_task_completed: {
     title: '萬丈高樓平地起',
     description: '傳奇的開始！',
     hidden: true,
+    rarity: 'common',
     condition: { type: 'completed_task_count', value: 1 },
   },
 }

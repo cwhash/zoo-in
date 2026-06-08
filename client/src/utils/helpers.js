@@ -2,6 +2,7 @@ import {
   MAX_NICKNAME_LENGTH,
   GRID_SEQUENCE,
   FALLBACK_ACTIVITY_CONFIG,
+  ACHIEVEMENT_RARITIES,
 } from '@/config/constants'
 
 export function formatDate(timestamp) {
@@ -28,6 +29,20 @@ export function sanitizeText(value, maxLength) {
 
 export function normalizeActivityCode(value) {
   return String(value || '').trim().toUpperCase()
+}
+
+export function normalizeAchievementRarity(value) {
+  const rarity = String(value || '').trim().toLowerCase()
+  return ACHIEVEMENT_RARITIES[rarity] ? rarity : 'common'
+}
+
+export function getAchievementRarityMeta(value) {
+  const rarity = normalizeAchievementRarity(value)
+  return {
+    id: rarity,
+    ...ACHIEVEMENT_RARITIES[rarity],
+    toneClass: `feed-rarity-${rarity}`,
+  }
 }
 
 export async function hashActivityCode(value) {
@@ -72,23 +87,69 @@ export function mergeActivityConfig(rawConfig) {
     ...FALLBACK_ACTIVITY_CONFIG.tasks,
     ...(rawConfig?.tasks || {}),
   }
+  const achievementIds = new Set([
+    ...Object.keys(FALLBACK_ACTIVITY_CONFIG.achievements || {}),
+    ...Object.keys(rawConfig?.achievements || {}),
+  ])
+  const achievements = Object.fromEntries(
+    Array.from(achievementIds).map((id) => {
+      const fallback = FALLBACK_ACTIVITY_CONFIG.achievements?.[id] || {}
+      const raw = rawConfig?.achievements?.[id] || {}
+      return [id, {
+        ...fallback,
+        ...raw,
+        rarity: normalizeAchievementRarity(raw.rarity || fallback.rarity),
+      }]
+    }),
+  )
+
   return {
     ...FALLBACK_ACTIVITY_CONFIG,
     ...(rawConfig || {}),
     task_order: Array.isArray(rawConfig?.task_order) ? rawConfig.task_order : GRID_SEQUENCE,
-    achievements: {
-      ...FALLBACK_ACTIVITY_CONFIG.achievements,
-      ...(rawConfig?.achievements || {}),
-    },
+    achievements,
     tasks: mergedTasks,
   }
 }
 
 export function formatFeedItem(item) {
+  return getFeedItemDisplay(item).sentence
+}
+
+export function getFeedItemDisplay(item = {}) {
   const date = formatDate(item.created_at)
   const nickName = item.nick_name || '匿名'
   if (item.type === 'achievement_unlocked') {
-    return `${date} ${nickName} 解鎖成就 ${item.achievement_title || ''}`
+    const meta = getAchievementRarityMeta(item.achievement_rarity || item.rarity)
+    const title = item.achievement_title || '神秘成就'
+    return {
+      id: item.id || `${item.created_at || ''}-${item.achievement_id || title}`,
+      type: 'achievement',
+      isAchievement: true,
+      rarity: meta.id,
+      toneClass: meta.toneClass,
+      badge: meta.badge,
+      rarityLabel: meta.label,
+      eyebrow: `${date} · ${meta.label}成就`,
+      title,
+      body: `${nickName} 解鎖成就`,
+      shortText: `${nickName} 解鎖 ${title}`,
+      sentence: `${date} ${nickName} 解鎖${meta.label}成就 ${title}`,
+    }
   }
-  return `${date} ${nickName} 完成任務 ${item.task_title || item.task_id || ''}`
+  const taskTitle = item.task_title || item.task_id || '任務'
+  return {
+    id: item.id || `${item.created_at || ''}-${item.task_id || taskTitle}`,
+    type: 'task',
+    isAchievement: false,
+    rarity: 'task',
+    toneClass: 'feed-type-task',
+    badge: item.task_id || 'DONE',
+    rarityLabel: '任務',
+    eyebrow: `${date} · 任務完成`,
+    title: taskTitle,
+    body: `${nickName} 完成任務`,
+    shortText: `${nickName} 完成 ${taskTitle}`,
+    sentence: `${date} ${nickName} 完成任務 ${taskTitle}`,
+  }
 }

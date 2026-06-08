@@ -222,6 +222,7 @@ a { color: inherit; }
 .form-message.error, .login-error { color: var(--danger); }
 
 .activity-panel, .achievement-panel, .feed-panel { padding: 16px; }
+.feed-panel { overflow: hidden; }
 
 .section-head {
   display: flex;
@@ -243,6 +244,281 @@ a { color: inherit; }
 .activity-card h3, .activity-card p,
 .achievement-item h3, .achievement-item p,
 .feed-item p { margin: 0; }
+
+.feed-arcade {
+  position: relative;
+  overflow: hidden;
+  gap: 12px;
+}
+
+.feed-feature {
+  --feed-accent: var(--level-c);
+  --feed-bg: var(--surface-soft);
+  --feed-ink: var(--text);
+  position: relative;
+  min-height: 88px;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  border-radius: var(--pixel-radius);
+  background: var(--feed-bg);
+  color: var(--feed-ink);
+  padding: 10px;
+  box-shadow: 3px 3px 0 var(--border);
+  animation: feed-step-in 0.28s steps(4, end);
+}
+
+.feed-feature::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-left: 8px solid var(--feed-accent);
+  pointer-events: none;
+}
+
+.feed-feature::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 0 42%, rgba(255, 255, 255, 0.38) 48%, transparent 54%),
+    linear-gradient(rgba(29, 36, 48, 0.06) 50%, transparent 50%);
+  background-size: 100% 100%, 100% 6px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.feed-feature-badge {
+  position: relative;
+  z-index: 1;
+  width: 52px;
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--border);
+  border-radius: var(--pixel-radius);
+  background: var(--feed-accent);
+  color: var(--text);
+  box-shadow: 2px 2px 0 rgba(29, 36, 48, 0.34);
+}
+
+.feed-feature-badge span {
+  max-width: 42px;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-size: 0.56rem;
+  font-weight: 1000;
+  line-height: 1.05;
+}
+
+.feed-feature-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.feed-feature-copy h3,
+.feed-feature-copy p {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.feed-feature-copy h3 {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.feed-feature-copy p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.feed-ticker {
+  overflow: hidden;
+  border: 2px solid var(--border);
+  border-radius: var(--pixel-radius);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.feed-ticker-track {
+  width: max-content;
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px;
+  animation: feed-marquee 24s linear infinite;
+}
+
+.feed-ticker.is-static .feed-ticker-track {
+  width: 100%;
+  animation: none;
+}
+
+.feed-chip {
+  --feed-accent: var(--level-n);
+  --feed-bg: var(--surface-soft);
+  flex: 0 0 auto;
+  max-width: min(72vw, 320px);
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--pixel-radius);
+  background: var(--feed-bg);
+  color: var(--text);
+  padding: 0 10px;
+  box-shadow: 2px 2px 0 rgba(29, 36, 48, 0.2);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.feed-chip strong {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  min-height: 22px;
+  border: 2px solid var(--border);
+  background: var(--feed-accent);
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
+.feed-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-rarity-common {
+  --feed-accent: var(--level-c);
+  --feed-bg: #f2fff2;
+}
+
+.feed-rarity-rare {
+  --feed-accent: var(--level-b);
+  --feed-bg: #edf7ff;
+}
+
+.feed-rarity-epic {
+  --feed-accent: var(--level-a);
+  --feed-bg: #fff0f6;
+}
+
+.feed-rarity-legendary {
+  --feed-accent: var(--level-s);
+  --feed-bg: #fff8cf;
+}
+
+.feed-rarity-secret {
+  --feed-accent: #1d2430;
+  --feed-bg: #2c3340;
+  --feed-ink: #fff;
+}
+
+.feed-rarity-secret .feed-feature-copy p:not(.eyebrow),
+.feed-rarity-secret .eyebrow {
+  color: #dce7f5;
+}
+
+.feed-feature.feed-rarity-rare {
+  animation: feed-step-in 0.28s steps(4, end), feed-rare-pulse 1.8s steps(3, end) infinite;
+}
+
+.feed-feature.feed-rarity-epic {
+  box-shadow: 4px 4px 0 var(--level-a), 7px 7px 0 var(--border);
+  animation: feed-step-in 0.28s steps(4, end), feed-pop 1.5s steps(2, end) infinite;
+}
+
+.feed-feature.feed-rarity-legendary::after {
+  opacity: 1;
+  animation: feed-scan 2s steps(8, end) infinite;
+}
+
+.feed-feature.feed-rarity-legendary .feed-feature-badge {
+  animation: feed-badge-bounce 1.2s steps(3, end) infinite;
+}
+
+.feed-feature.feed-rarity-secret::after {
+  opacity: 0.3;
+  animation: feed-secret-flicker 1.4s steps(2, end) infinite;
+}
+
+.feed-accessible-list {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes feed-step-in {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes feed-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes feed-rare-pulse {
+  0%, 100% { box-shadow: 3px 3px 0 var(--border); }
+  50% { box-shadow: 5px 5px 0 var(--level-b); }
+}
+
+@keyframes feed-pop {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-1px, -1px); }
+}
+
+@keyframes feed-scan {
+  from { background-position: -120% 0, 0 0; }
+  to { background-position: 120% 0, 0 0; }
+}
+
+@keyframes feed-badge-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes feed-secret-flicker {
+  0%, 100% { opacity: 0.16; }
+  50% { opacity: 0.42; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-feature,
+  .feed-feature.feed-rarity-rare,
+  .feed-feature.feed-rarity-epic,
+  .feed-feature.feed-rarity-legendary .feed-feature-badge,
+  .feed-feature.feed-rarity-legendary::after,
+  .feed-feature.feed-rarity-secret::after,
+  .feed-ticker-track {
+    animation: none;
+  }
+
+  .feed-ticker-track {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .feed-feature::after {
+    opacity: 0;
+  }
+}
 
 .activity-card { display: grid; gap: 12px; }
 
