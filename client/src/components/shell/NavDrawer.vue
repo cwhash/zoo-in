@@ -35,7 +35,6 @@ function go(name) {
       <nav class="drawer-nav">
         <button type="button" @click="go('dashboard')">活動中心</button>
         <button v-if="activityStore.isUnlocked" type="button" @click="go('life-grid')">Life Grid 2027</button>
-        <button type="button" @click="go('admin')">管理員後台</button>
       </nav>
     </aside>
   </Teleport>
