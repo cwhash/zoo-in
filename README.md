@@ -109,7 +109,7 @@ The Firebase project is on Blaze. Budget Alert is configured in Google Cloud, an
 - `client/src/router/`: routes, including `/admin`.
 - `client/src/stores/`: Firebase-backed app state.
 - `client/src/components/`: shared UI and Life Grid components.
-- `functions/index.js`: Firebase Cloud Functions backend.
+- `functions/`: Firebase Cloud Functions backend modules.
 - `firebase.json`: Firebase Hosting, Functions, and rules configuration.
 - `database.rules.json`: Realtime Database rules.
 - `storage.rules`: Firebase Storage rules.
