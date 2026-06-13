@@ -109,7 +109,7 @@ Firebase 專案已升級 Blaze。Google Cloud Budget Alert 已設定，Functions
 - `client/src/router/`：路由，包含 `/admin`。
 - `client/src/stores/`：Firebase-backed app state。
 - `client/src/components/`：共用 UI 與 Life Grid components。
-- `functions/index.js`：Firebase Cloud Functions 後端。
+- `functions/`：Firebase Cloud Functions 後端模組。
 - `firebase.json`：Firebase Hosting、Functions 與 rules 設定。
 - `database.rules.json`：Realtime Database rules。
 - `storage.rules`：Firebase Storage rules。
