@@ -1,4 +1,6 @@
 <script setup>
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+
 /**
  * Zoo-In pixel logo: magnifying glass plus cycling silhouettes.
  * Drawn on a 16x16 grid with step animations to keep the pixel look crisp.
@@ -169,6 +171,62 @@ const animals = [
     ],
   },
 ]
+
+const currentAnimalIndex = ref(0)
+const currentAnimal = computed(() => animals[currentAnimalIndex.value])
+let animalTimer = null
+let reducedMotionQuery = null
+
+function pickNextAnimalIndex() {
+  if (animals.length <= 1) {
+    return 0
+  }
+
+  const randomIndex = Math.floor(Math.random() * (animals.length - 1))
+  return randomIndex >= currentAnimalIndex.value ? randomIndex + 1 : randomIndex
+}
+
+function showRandomAnimal() {
+  currentAnimalIndex.value = pickNextAnimalIndex()
+}
+
+function stopAnimalTimer() {
+  if (animalTimer) {
+    window.clearInterval(animalTimer)
+    animalTimer = null
+  }
+}
+
+function startAnimalTimer() {
+  stopAnimalTimer()
+  animalTimer = window.setInterval(showRandomAnimal, 2000)
+}
+
+function handleMotionPreferenceChange(event) {
+  if (event.matches) {
+    currentAnimalIndex.value = 0
+    stopAnimalTimer()
+    return
+  }
+
+  startAnimalTimer()
+}
+
+onMounted(() => {
+  reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  if (reducedMotionQuery.matches) {
+    currentAnimalIndex.value = 0
+    return
+  }
+
+  startAnimalTimer()
+  reducedMotionQuery.addEventListener('change', handleMotionPreferenceChange)
+})
+
+onBeforeUnmount(() => {
+  stopAnimalTimer()
+  reducedMotionQuery?.removeEventListener('change', handleMotionPreferenceChange)
+})
 </script>
 
 <template>
@@ -212,14 +270,13 @@ const animals = [
 
       <g class="animal-cycle" aria-hidden="true">
         <g
-          v-for="animal in animals"
-          :key="animal.name"
+          :key="currentAnimal.name"
           class="animal"
-          :class="animal.className"
+          :class="currentAnimal.className"
         >
           <rect
-            v-for="(cell, index) in animal.pixels"
-            :key="`${animal.name}-pixel-${index}`"
+            v-for="(cell, index) in currentAnimal.pixels"
+            :key="`${currentAnimal.name}-pixel-${index}`"
             class="animal-pixel"
             :x="cell[0] * pixelSize"
             :y="cell[1] * pixelSize"
@@ -227,8 +284,8 @@ const animals = [
             :height="pixelSize"
           />
           <rect
-            v-for="(cell, index) in animal.cutouts"
-            :key="`${animal.name}-cutout-${index}`"
+            v-for="(cell, index) in currentAnimal.cutouts"
+            :key="`${currentAnimal.name}-cutout-${index}`"
             class="animal-cutout"
             :x="cell[0] * pixelSize"
             :y="cell[1] * pixelSize"
@@ -308,25 +365,12 @@ const animals = [
 }
 
 .animal {
-  opacity: 0;
-  animation: pixel-animal-cycle 3s steps(1, end) infinite;
+  opacity: 1;
 }
-
-.animal-1 { animation-delay: 0s; }
-.animal-2 { animation-delay: 0.5s; }
-.animal-3 { animation-delay: 1s; }
-.animal-4 { animation-delay: 1.5s; }
-.animal-5 { animation-delay: 2s; }
-.animal-6 { animation-delay: 2.5s; }
 
 .pixel-spark {
   opacity: 0.8;
   animation: pixel-spark 1.5s steps(2, end) infinite;
-}
-
-@keyframes pixel-animal-cycle {
-  0%, 15% { opacity: 1; }
-  16%, 100% { opacity: 0; }
 }
 
 @keyframes pixel-spark {
@@ -335,13 +379,8 @@ const animals = [
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animal,
   .pixel-spark {
     animation: none;
-  }
-
-  .animal-1 {
-    opacity: 1;
   }
 }
 </style>
