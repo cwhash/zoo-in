@@ -49,12 +49,16 @@ submissions/{activity_id}/{uid}/{task_id}.jpg
 
 - `unlockActivity`
 - `completeTask`
+- `adminSyncClaims`
+- `adminSyncAllClaims`
 - `adminUpdateActivityCode`
 - `adminUpdateNTask`
 - `adminResetTaskCompletion`
 - `adminDeleteUserData`
 
 活動代碼不放在前端程式碼。管理員在 `/admin` 設定代碼後，後端會正規化並轉成 SHA-256 hash，寫入 `activity_code_hashes/{code_hash}`，並用 transaction 限制 Life Grid 最多 999 人。
+
+Storage 的管理員讀取與刪除權限使用 Firebase Auth custom claims。管理員名單仍維護在 Realtime Database 的 `admins/{uid}`，但變更管理員後，現有管理員需要呼叫 `adminSyncClaims` 同步單一使用者，或呼叫 `adminSyncAllClaims` 同步所有使用者。受影響使用者需要重新整理 ID token 或重新登入，Storage rules 才會看到新的 claim。
 
 ## 本機開發
 

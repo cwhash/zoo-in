@@ -51,7 +51,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          npx firebase-tools@latest deploy --only functions:unlockActivity,functions:completeTask,functions:adminUpdateActivityCode,functions:adminUpdateNTask,functions:adminResetTaskCompletion,functions:adminDeleteUserData --project zoo-in --non-interactive --debug 2>&1 | tee functions-deploy.log
+          npx firebase-tools@latest deploy --only functions:unlockActivity,functions:completeTask,functions:adminSyncClaims,functions:adminSyncAllClaims,functions:adminUpdateActivityCode,functions:adminUpdateNTask,functions:adminResetTaskCompletion,functions:adminDeleteUserData --project zoo-in --non-interactive --debug 2>&1 | tee functions-deploy.log
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             echo "::group::Firebase deploy log tail"

@@ -960,6 +960,12 @@ a { color: inherit; }
 
 .n-task-editor, .admin-task-row { display: grid; gap: 12px; }
 
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .admin-task-row {
   padding: 12px;
   border: 2px solid var(--border);

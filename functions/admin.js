@@ -1,4 +1,4 @@
-const { bucket, callableRuntime, db } = require('./firebase');
+const { admin, bucket, callableRuntime, db } = require('./firebase');
 const {
   CODE_MAX_USES,
   LIFE_GRID_ACTIVITY_ID,
@@ -14,6 +14,127 @@ const {
 } = require('./utils');
 const { ensureActivityConfig } = require('./db');
 const { revokeNoLongerValidAchievements } = require('./life-grid-2027');
+
+async function writeAdminAuditLog(actor, action, details = {}) {
+  const timestamp = Date.now();
+  await db.ref(`admin_audit_log/${timestamp}`).set({
+    actor,
+    action,
+    timestamp,
+    ...details,
+  });
+}
+
+async function getDbAdminUids() {
+  const adminsSnapshot = await db.ref('admins').once('value');
+  const admins = adminsSnapshot.val() || {};
+  return new Set(
+    Object.entries(admins)
+      .filter(([, value]) => value === true)
+      .map(([uid]) => uid),
+  );
+}
+
+async function setAdminClaimFromDb(targetUid, adminUids = null) {
+  const isAdmin = adminUids
+    ? adminUids.has(targetUid)
+    : (await db.ref(`admins/${targetUid}`).once('value')).val() === true;
+
+  let userRecord;
+  try {
+    userRecord = await admin.auth().getUser(targetUid);
+  } catch (error) {
+    if (error?.code === 'auth/user-not-found') {
+      throw httpsError('not-found', '找不到這個使用者。');
+    }
+    throw error;
+  }
+
+  const nextClaims = {
+    ...(userRecord.customClaims || {}),
+  };
+  if (isAdmin) {
+    nextClaims.admin = true;
+  } else {
+    delete nextClaims.admin;
+  }
+
+  await admin.auth().setCustomUserClaims(targetUid, nextClaims);
+  return {
+    uid: targetUid,
+    admin: isAdmin,
+  };
+}
+
+const adminSyncClaims = callableRuntime.https.onCall(async (data, context) => {
+  const actor = assertAuth(context);
+  await assertAdmin(actor);
+
+  const targetUid = String(data?.uid || '').trim();
+  if (!targetUid) {
+    throw httpsError('invalid-argument', '請提供 UID。');
+  }
+
+  const result = await setAdminClaimFromDb(targetUid);
+  await writeAdminAuditLog(actor, 'admin_sync_claims', {
+    targetUid,
+    admin: result.admin,
+  });
+
+  return {
+    ...result,
+    refreshRequired: true,
+  };
+});
+
+const adminSyncAllClaims = callableRuntime.https.onCall(async (data, context) => {
+  const actor = assertAuth(context);
+  await assertAdmin(actor);
+
+  const adminUids = await getDbAdminUids();
+  let pageToken;
+  let scannedCount = 0;
+  let updatedCount = 0;
+  const updated = [];
+
+  do {
+    const page = await admin.auth().listUsers(1000, pageToken);
+    await Promise.all(page.users.map(async (userRecord) => {
+      scannedCount += 1;
+      const shouldBeAdmin = adminUids.has(userRecord.uid);
+      const hasAdminClaim = userRecord.customClaims?.admin === true;
+      if (shouldBeAdmin === hasAdminClaim) return;
+
+      const nextClaims = {
+        ...(userRecord.customClaims || {}),
+      };
+      if (shouldBeAdmin) {
+        nextClaims.admin = true;
+      } else {
+        delete nextClaims.admin;
+      }
+      await admin.auth().setCustomUserClaims(userRecord.uid, nextClaims);
+      updatedCount += 1;
+      updated.push({
+        uid: userRecord.uid,
+        admin: shouldBeAdmin,
+      });
+    }));
+    pageToken = page.pageToken;
+  } while (pageToken);
+
+  await writeAdminAuditLog(actor, 'admin_sync_all_claims', {
+    scannedCount,
+    updatedCount,
+  });
+
+  return {
+    scannedCount,
+    updatedCount,
+    updated,
+    refreshRequired: updatedCount > 0,
+  };
+});
 
 const adminUpdateActivityCode = callableRuntime.https.onCall(async (data, context) => {
   const uid = assertAuth(context);
@@ -166,6 +287,8 @@ const adminDeleteUserData = callableRuntime.https.onCall(async (data, context) =
 });
 
 module.exports = {
+  adminSyncClaims,
+  adminSyncAllClaims,
   adminUpdateActivityCode,
   adminUpdateNTask,
   adminResetTaskCompletion,

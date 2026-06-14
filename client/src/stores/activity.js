@@ -193,6 +193,16 @@ export const useActivityStore = defineStore('activity', () => {
     return (await fn({ code, maxUses })).data
   }
 
+  async function adminSyncClaims(uid) {
+    const fn = httpsCallable(functions, 'adminSyncClaims')
+    return (await fn({ uid })).data
+  }
+
+  async function adminSyncAllClaims() {
+    const fn = httpsCallable(functions, 'adminSyncAllClaims')
+    return (await fn({})).data
+  }
+
   async function adminUpdateNTask(taskId, title, description) {
     const fn = httpsCallable(functions, 'adminUpdateNTask')
     return (await fn({ taskId, title, description })).data
@@ -263,6 +273,8 @@ export const useActivityStore = defineStore('activity', () => {
     unlockActivity,
     saveTaskPlan,
     completeTask,
+    adminSyncClaims,
+    adminSyncAllClaims,
     adminUpdateActivityCode,
     adminUpdateNTask,
     adminResetTask,
