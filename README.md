@@ -49,12 +49,16 @@ Deployed callable Functions:
 
 - `unlockActivity`
 - `completeTask`
+- `adminSyncClaims`
+- `adminSyncAllClaims`
 - `adminUpdateActivityCode`
 - `adminUpdateNTask`
 - `adminResetTaskCompletion`
 - `adminDeleteUserData`
 
 Activity codes are not stored in frontend code. Admins set a code through `/admin`; the backend normalizes it, stores its SHA-256 hash in `activity_code_hashes/{code_hash}`, and uses transactions to enforce the 999 participant limit.
+
+Storage admin access uses Firebase Auth custom claims. Admins are still managed in Realtime Database under `admins/{uid}`, but an existing admin must call `adminSyncClaims` for one user or `adminSyncAllClaims` for all users after changing admin membership. Affected users must refresh their ID token or sign in again before Storage rules see the new claim.
 
 ## Run Locally
 

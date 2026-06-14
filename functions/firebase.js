@@ -12,6 +12,7 @@ const callableRuntime = functions.region(REGION).runWith({
 });
 
 module.exports = {
+  admin,
   db,
   bucket,
   callableRuntime,

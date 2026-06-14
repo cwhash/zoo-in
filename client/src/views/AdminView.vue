@@ -3,7 +3,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useActivityStore } from '@/stores/activity'
 import { useToastStore } from '@/stores/toast'
-import { db } from '@/firebase'
+import { auth, db } from '@/firebase'
 import { ref as dbRef, get } from 'firebase/database'
 import { LIFE_GRID_MAX_USES, N_TASKS } from '@/config/constants'
 
@@ -20,6 +20,10 @@ const activityCodeMaxUses = ref(LIFE_GRID_MAX_USES)
 const activityCodeMsg = ref('')
 const activityCodeError = ref(false)
 const savingActivityCode = ref(false)
+
+const syncClaimsMsg = ref('')
+const syncClaimsError = ref(false)
+const syncingClaims = ref(false)
 
 const resetUid = ref('')
 const resetTaskId = ref('')
@@ -96,6 +100,46 @@ async function saveActivityCode(event) {
   }
 }
 
+async function syncMyClaims() {
+  const uid = authStore.user?.uid
+  if (!uid) {
+    syncClaimsMsg.value = '找不到目前登入者 UID'
+    syncClaimsError.value = true
+    return
+  }
+
+  syncingClaims.value = true
+  syncClaimsMsg.value = '同步中...'
+  syncClaimsError.value = false
+  try {
+    await activityStore.adminSyncClaims(uid)
+    await auth.currentUser?.getIdToken(true)
+    syncClaimsMsg.value = '管理員 claim 已同步，登入 token 已重新整理'
+  } catch (err) {
+    syncClaimsMsg.value = err?.message || '同步失敗'
+    syncClaimsError.value = true
+  } finally {
+    syncingClaims.value = false
+  }
+}
+
+async function syncAllClaims() {
+  if (!confirm('確定要依照 admins/{uid} 同步所有使用者的 admin claim 嗎？')) return
+
+  syncingClaims.value = true
+  syncClaimsMsg.value = '同步所有使用者中...'
+  syncClaimsError.value = false
+  try {
+    const result = await activityStore.adminSyncAllClaims()
+    syncClaimsMsg.value = `已掃描 ${result.scannedCount || 0} 位使用者，更新 ${result.updatedCount || 0} 筆 claim。受影響使用者需重新登入或重新整理 token。`
+  } catch (err) {
+    syncClaimsMsg.value = err?.message || '同步失敗'
+    syncClaimsError.value = true
+  } finally {
+    syncingClaims.value = false
+  }
+}
+
 async function saveNTask(taskId) {
   const form = nTaskForms.value[taskId]
   if (!form?.title?.trim()) {
@@ -168,6 +212,23 @@ async function deleteUser(event) {
   </section>
 
   <section v-else class="admin-grid">
+    <section class="admin-panel">
+      <p class="eyebrow">管理員權限</p>
+      <h2>同步 Storage 權限</h2>
+      <p class="muted-text">
+        Storage rules 使用 Firebase Auth custom claims。變更 admins 名單後，需要同步 claim，受影響使用者再重新登入或重新整理 token。
+      </p>
+      <div class="action-row">
+        <button class="primary-btn" type="button" :disabled="syncingClaims" @click="syncMyClaims">
+          同步我的管理員 claim
+        </button>
+        <button class="primary-btn" type="button" :disabled="syncingClaims" @click="syncAllClaims">
+          同步所有管理員 claims
+        </button>
+      </div>
+      <p class="form-message" :class="{ error: syncClaimsError }">{{ syncClaimsMsg }}</p>
+    </section>
+
     <section class="admin-panel">
       <p class="eyebrow">Life Grid 活動代碼</p>
       <h2>設定活動代碼</h2>
