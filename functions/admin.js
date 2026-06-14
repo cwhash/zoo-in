@@ -35,6 +35,18 @@ async function getDbAdminUids() {
   );
 }
 
+function buildAdminClaims(existingClaims = {}, isAdmin) {
+  const nextClaims = {
+    ...(existingClaims || {}),
+  };
+  if (isAdmin) {
+    nextClaims.admin = true;
+  } else {
+    delete nextClaims.admin;
+  }
+  return nextClaims;
+}
+
 async function setAdminClaimFromDb(targetUid, adminUids = null) {
   const isAdmin = adminUids
     ? adminUids.has(targetUid)
@@ -50,15 +62,7 @@ async function setAdminClaimFromDb(targetUid, adminUids = null) {
     throw error;
   }
 
-  const nextClaims = {
-    ...(userRecord.customClaims || {}),
-  };
-  if (isAdmin) {
-    nextClaims.admin = true;
-  } else {
-    delete nextClaims.admin;
-  }
-
+  const nextClaims = buildAdminClaims(userRecord.customClaims, isAdmin);
   await admin.auth().setCustomUserClaims(targetUid, nextClaims);
   return {
     uid: targetUid,
@@ -105,14 +109,7 @@ const adminSyncAllClaims = callableRuntime.https.onCall(async (data, context) =>
       const hasAdminClaim = userRecord.customClaims?.admin === true;
       if (shouldBeAdmin === hasAdminClaim) return;
 
-      const nextClaims = {
-        ...(userRecord.customClaims || {}),
-      };
-      if (shouldBeAdmin) {
-        nextClaims.admin = true;
-      } else {
-        delete nextClaims.admin;
-      }
+      const nextClaims = buildAdminClaims(userRecord.customClaims, shouldBeAdmin);
       await admin.auth().setCustomUserClaims(userRecord.uid, nextClaims);
       updatedCount += 1;
       updated.push({
@@ -287,6 +284,7 @@ const adminDeleteUserData = callableRuntime.https.onCall(async (data, context) =
 });
 
 module.exports = {
+  buildAdminClaims,
   adminSyncClaims,
   adminSyncAllClaims,
   adminUpdateActivityCode,

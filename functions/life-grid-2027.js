@@ -261,6 +261,7 @@ async function revokeNoLongerValidAchievements(uid) {
 module.exports = {
   unlockActivity,
   completeTask,
+  conditionMet,
   evaluateAchievements,
   revokeNoLongerValidAchievements,
 };

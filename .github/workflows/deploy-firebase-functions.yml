@@ -47,6 +47,10 @@ jobs:
         working-directory: functions
         run: npm run lint
 
+      - name: Test Functions
+        working-directory: functions
+        run: npm test
+
       - name: Deploy Functions
         shell: bash
         run: |
