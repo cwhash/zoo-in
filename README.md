@@ -9,7 +9,7 @@ Zoo-In is a Firebase-based activity platform. The production frontend is a Vue 3
 - Google sign-in through Firebase Authentication using same-tab redirect sign-in, not popup sign-in.
 - Vue 3 + Vite frontend with Pinia stores and Vue Router.
 - Firebase Hosting is the production frontend target.
-- Admin backend route is `/admin`.
+- Admin backend route is `/admin`, with Life Grid 2027 settings under `/admin/life-grid-2027`.
 - Cloud Functions are the trusted backend for activity unlock, task completion, achievements, feeds, and admin operations.
 - Life Grid 2027 is the first activity.
 - Life Grid task completion requires a cropped 4:5 JPEG photo upload to Firebase Storage.
@@ -56,7 +56,7 @@ Deployed callable Functions:
 - `adminResetTaskCompletion`
 - `adminDeleteUserData`
 
-Activity codes are not stored in frontend code. Admins set a code through `/admin`; the backend normalizes it, stores its SHA-256 hash in `activity_code_hashes/{code_hash}`, and uses transactions to enforce the 999 participant limit.
+Activity codes are not stored in frontend code. Admins set a code through `/admin/life-grid-2027`; the backend normalizes it, stores its SHA-256 hash in `activity_code_hashes/{code_hash}`, and uses transactions to enforce the 999 participant limit.
 
 Storage admin access uses Firebase Auth custom claims. Admins are still managed in Realtime Database under `admins/{uid}`, but an existing admin must call `adminSyncClaims` for one user or `adminSyncAllClaims` for all users after changing admin membership. Affected users must refresh their ID token or sign in again before Storage rules see the new claim.
 
