@@ -13,6 +13,7 @@ const toast = useToastStore()
 
 const isAdmin = ref(false)
 const loading = ref(true)
+const loadError = ref('')
 const nTaskForms = ref({})
 
 const activityCode = ref('')
@@ -37,20 +38,27 @@ const deleteError = ref(false)
 const deleting = ref(false)
 
 onMounted(async () => {
-  const uid = authStore.user?.uid
-  if (!uid) {
+  try {
+    if (authStore.loading) {
+      await authStore.init()
+    }
+
+    const uid = authStore.user?.uid
+    if (!uid) return
+
+    const snap = await get(dbRef(db, `admins/${uid}`))
+    isAdmin.value = snap.val() === true
+
+    if (isAdmin.value) {
+      activityStore.attachAdminListeners()
+      initNTaskForms()
+    }
+  } catch (err) {
+    console.error('Admin permission check failed', err)
+    loadError.value = err?.message || '管理員權限檢查失敗'
+  } finally {
     loading.value = false
-    return
   }
-
-  const snap = await get(dbRef(db, `admins/${uid}`))
-  isAdmin.value = snap.val() === true
-
-  if (isAdmin.value) {
-    activityStore.attachAdminListeners()
-    initNTaskForms()
-  }
-  loading.value = false
 })
 
 onBeforeUnmount(() => {
@@ -203,6 +211,12 @@ async function deleteUser(event) {
 <template>
   <section v-if="loading" class="dashboard-view">
     <p class="muted-text">載入中...</p>
+  </section>
+
+  <section v-else-if="loadError" class="dashboard-view">
+    <section class="unlock-panel">
+      <p class="muted-text">{{ loadError }}</p>
+    </section>
   </section>
 
   <section v-else-if="!isAdmin" class="dashboard-view">
