@@ -958,6 +958,35 @@ a { color: inherit; }
 
 .admin-panel { display: grid; gap: 14px; padding: 16px; }
 
+.admin-activity-card {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 16px;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--pixel-radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.admin-activity-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+}
+
+.admin-activity-card-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.admin-activity-card-action {
+  color: var(--accent);
+  font-weight: 800;
+}
+
 .n-task-editor, .admin-task-row { display: grid; gap: 12px; }
 
 .action-row {

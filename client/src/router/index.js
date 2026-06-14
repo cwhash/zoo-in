@@ -24,6 +24,12 @@ const routes = [
     component: () => import('@/views/AdminView.vue'),
     meta: { requiresAuth: true, title: '管理員後台' },
   },
+  {
+    path: '/admin/life-grid-2027',
+    name: 'admin-life-grid-2027',
+    component: () => import('@/views/AdminLifeGridView.vue'),
+    meta: { requiresAuth: true, title: 'Life Grid 2027 設定' },
+  },
 ]
 
 const router = createRouter({
